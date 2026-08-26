@@ -3339,7 +3339,7 @@ export default function WatchlistPage() {
   }, [wlMetas, activeId]);
 
   /* ── active watchlist data ───────────────────────────────────────── */
-  const { data: watchlist, isLoading: wlLoading, isFetching: wlFetching } = useQuery<WatchlistResponse>({
+  const { data: watchlist, isLoading: wlLoading, isFetching: wlFetching, isError: wlIsError, refetch: refetchWatchlist } = useQuery<WatchlistResponse>({
     queryKey: ['/api/watchlist', activeId],
     queryFn: async ({ signal }) => {
       if (!activeId) return null;
@@ -3348,7 +3348,11 @@ export default function WatchlistPage() {
       return r.json();
     },
     enabled: !!activeId,
-    retry: 0,
+    // A single retry gives a transient upstream failure (e.g. the proxy's 30s
+    // ceiling) one chance to self-heal before surfacing as an error — see the
+    // fresh-load error state below. Prior data (if any) is never cleared by
+    // React Query on a failed refetch, so LKG rendering needs no extra code.
+    retry: 1,
     staleTime: 60_000,
     // Keep cache alive for 8h so returning to the page never shows a blank —
     // stale data renders immediately while a background refetch runs.
@@ -7740,6 +7744,31 @@ export default function WatchlistPage() {
     return (
       <div style={{ minHeight: '100vh', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="wl-spin" style={{ width: 24, height: 24, border: '2px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.55)', borderRadius: '50%' }} />
+      </div>
+    );
+  }
+
+  /* ── watchlist detail fetch failed with no prior data (fresh-load failure) ──
+   * React Query never clears `data` on a failed refetch, so this only fires
+   * when there is genuinely nothing to show yet — it must not fire for a
+   * background refresh failure on an already-loaded watchlist (that case
+   * keeps rendering the last-known-good `watchlist` below, unchanged). */
+  if (activeId && wlIsError && !watchlist) {
+    return (
+      <div style={{ minHeight: '100vh', background: C.bg, color: C.text, fontFamily: font, display: 'flex', flexDirection: 'column' }}>
+        {renderTabBar()}
+        {renderAddPanel()}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+          <div style={{ textAlign: 'center' as const }}>
+            <div style={{ fontSize: 13, color: C.dim, fontFamily: font, marginBottom: 12 }}>Unable to load this watchlist.</div>
+            <button
+              onClick={() => refetchWatchlist()}
+              style={{ fontSize: 11, fontWeight: 700, fontFamily: font, color: C.teal, background: 'transparent', border: `1px solid ${C.teal}40`, borderRadius: 4, padding: '6px 16px', cursor: 'pointer' }}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
