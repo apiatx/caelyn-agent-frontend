@@ -9,29 +9,40 @@ These rules apply to all coding agent runtimes:
 - Replit Agent
 - Future providers
 
-Determine the active agent runtime from the environment in which you are operating.
+Determine the active agent runtime from the environment in which you are
+operating.
 
 Use exactly one agent-specific final report path:
 
-- Codex CLI: `/home/runner/workspace/.codex-reports/latest.md`
-- DeepSeek through OpenCode: `/home/runner/workspace/.opencode-reports/latest.md`
-- Replit Agent: Report in the conversation. No file path. Do not invent one.
+- Codex CLI:
+  `/home/runner/workspace/.codex-reports/latest.md`
+- DeepSeek through OpenCode:
+  `/home/runner/workspace/.opencode-reports/latest.md`
+- Replit Agent:
+  Report in the conversation. No file path. Do not invent one.
 
 Never write to or overwrite another agent's report file.
 
-The assigned report file is an operational artifact, not a production file. Never stage or commit it.
+The assigned report file is an operational artifact, not a production file.
+Never stage or commit it.
 
 The active agent may create its assigned report directory if it does not exist.
 
-Every completed task, including a read-only audit, must produce its assigned report unless the user explicitly says not to.
+Every completed task, including a read-only audit, must produce its assigned
+report unless the user explicitly says not to.
 
 ## Agent report files and final output
 
 Use the report file that matches the active coding agent:
 
-- DeepSeek/OpenCode: `/home/runner/workspace/.opencode-reports/latest.md`
-- Codex CLI: `/home/runner/workspace/.codex-reports/latest.md`
-- Replit Agent: Report directly in the conversation.
+- DeepSeek/OpenCode:
+  `/home/runner/workspace/.opencode-reports/latest.md`
+
+- Codex CLI:
+  `/home/runner/workspace/.codex-reports/latest.md`
+
+- Replit Agent:
+  Report directly in the conversation.
 
 After completing the task and creating the approved local commit:
 
@@ -41,19 +52,19 @@ After completing the task and creating the approved local commit:
 
 For DeepSeek/OpenCode, run:
 
-`printf '\n===== BEGIN OPENCODE REPORT =====\n'`
-
-`cat /home/runner/workspace/.opencode-reports/latest.md`
-
-`printf '\n===== END OPENCODE REPORT =====\n'`
+```bash
+printf '\n===== BEGIN OPENCODE REPORT =====\n'
+cat /home/runner/workspace/.opencode-reports/latest.md
+printf '\n===== END OPENCODE REPORT =====\n'
+```
 
 For Codex CLI, run:
 
-`printf '\n===== BEGIN CODEX REPORT =====\n'`
-
-`cat /home/runner/workspace/.codex-reports/latest.md`
-
-`printf '\n===== END CODEX REPORT =====\n'`
+```bash
+printf '\n===== BEGIN CODEX REPORT =====\n'
+cat /home/runner/workspace/.codex-reports/latest.md
+printf '\n===== END CODEX REPORT =====\n'
+```
 
 Do not merely state that the report exists.
 
@@ -70,9 +81,12 @@ The complete report must appear in the agent output.
 
 The user is the pilot and final decision-maker.
 
-Perform only the requested task. Do not expand scope, redesign adjacent systems, perform opportunistic cleanup, or fix unrelated issues.
+Perform only the requested task. Do not expand scope, redesign adjacent systems,
+perform opportunistic cleanup, or fix unrelated issues.
 
-Assume the existing architecture, APIs, queries, caches, contexts, props, components, contracts, and UI relationships exist for deliberate reasons unless direct repository evidence proves otherwise.
+Assume the existing architecture, APIs, queries, caches, contexts, props,
+components, contracts, and UI relationships exist for deliberate reasons unless
+direct repository evidence proves otherwise.
 
 When an unrelated bug, risk, or major inefficiency is discovered:
 
@@ -80,7 +94,8 @@ When an unrelated bug, risk, or major inefficiency is discovered:
 2. explain its impact
 3. do not fix it without approval
 
-For ordinary, clearly scoped tasks, inspect the existing path and proceed without requiring a separate audit-approval round.
+For ordinary, clearly scoped tasks, inspect the existing path and proceed
+without requiring a separate audit-approval round.
 
 Stop for approval when:
 
@@ -116,19 +131,23 @@ Before editing:
 4. preserve all pre-existing user or agent work
 5. confirm local `main` is not behind or diverged from `origin/main`
 
-The active coding agent may run `git fetch origin main --quiet` only to refresh remote tracking information before checking ahead/behind status.
+The active coding agent may run `git fetch origin main --quiet` only to refresh
+remote tracking information before checking ahead/behind status.
 
 If local `main` is behind or diverged:
 
 STOP and report it.
 
-Do not create a workaround, clone, branch, worktree, merge, or alternate commit path.
+Do not create a workaround, clone, branch, worktree, merge, or alternate commit
+path.
 
 ## Workspace lock (multi-agent safety)
 
 Before starting any implementation task, claim the workspace:
 
-`python3 scripts/workspace_guard.py claim --actor <runtime> --task "short description"`
+```bash
+python3 scripts/workspace_guard.py claim --actor <runtime> --task "short description"
+```
 
 Actor values:
 
@@ -150,11 +169,15 @@ Stale locks (>24 hours) are FLAGGED but NEVER auto-released.
 
 Force-release requires explicit user authorization:
 
-`python3 scripts/workspace_guard.py release --force`
+```bash
+python3 scripts/workspace_guard.py release --force
+```
 
 Release the lock after the task is fully complete (after push):
 
-`python3 scripts/workspace_guard.py release`
+```bash
+python3 scripts/workspace_guard.py release
+```
 
 ## Successful implementation task lifecycle
 
@@ -178,11 +201,14 @@ Push is mandatory before handoff.
 
 To push:
 
-`git push origin main`
+```bash
+git push origin main
+```
 
 This triggers the pre-push hook automatically.
 
-If using the Replit Agent runtime, use the `gitPush` platform callback for authenticated pushes.
+If using the Replit Agent runtime, use the `gitPush` platform callback for
+authenticated pushes.
 
 ## Git workflow
 
@@ -222,15 +248,18 @@ Before committing:
 1. run `git diff --check`
 2. stage exact paths only
 3. never use `git add .` or `git add -A`
-4. never stage runtime data, caches, logs, `.replit`, `.codex-reports`, `.opencode-reports`, generated files, or unrelated dirty files
+4. never stage runtime data, caches, logs, `.replit`, `.codex-reports`,
+   `.opencode-reports`, generated files, or unrelated dirty files
 5. show the staged file list and staged diff
 6. confirm only task-related files are staged
 
 Create one descriptive local commit only after validation succeeds.
 
-If validation fails, do not commit unless the user explicitly approves a partial or failing state.
+If validation fails, do not commit unless the user explicitly approves a
+partial or failing state.
 
-If the user says audit only, read only, do not edit, or do not commit, follow that instruction instead.
+If the user says audit only, read only, do not edit, or do not commit, follow
+that instruction instead.
 
 ## Git cases
 
@@ -238,21 +267,28 @@ Before editing, confirm which git case applies:
 
 **Case A** — `HEAD == origin/main` — proceed normally.
 
-**Case B** — local behind, no divergence — only `git fetch origin main` + `git merge --ff-only origin/main` is allowed. Never create a merge commit.
+**Case B** — local behind, no divergence — only `git fetch origin main` + `git
+merge --ff-only origin/main` is allowed. Never create a merge commit.
 
-**Case C-GENERATED** — local ahead, all commits are generated/runtime — work may proceed. Do not reset or rebase.
+**Case C-GENERATED** — local ahead, all commits are generated/runtime — work
+may proceed. Do not reset or rebase.
 
-**Case C-SOURCE** — local ahead, commits include source changes — STOP unless these are the current actor's validated task commits being completed and pushed.
+**Case C-SOURCE** — local ahead, commits include source changes — STOP unless
+these are the current actor's validated task commits being completed and pushed.
 
-**Case D** — true divergence (ahead AND behind) — STOP. Report. Do not merge, rebase, reset, cherry-pick, or force-push.
+**Case D** — true divergence (ahead AND behind) — STOP. Report. Do not merge,
+rebase, reset, cherry-pick, or force-push.
 
 Check case with:
 
-`python3 scripts/workspace_guard.py preflight`
+```bash
+python3 scripts/workspace_guard.py preflight
+```
 
 ## Source / generated classifier
 
-The guard script (`scripts/workspace_guard.py`) is the single authoritative classifier.
+The guard script (`scripts/workspace_guard.py`) is the single authoritative
+classifier.
 
 Source includes:
 
@@ -291,7 +327,8 @@ Before changing code, trace the current:
 
 Prefer correcting or extending the existing path.
 
-Do not create any of the following without explicit approval containing `ARCHITECTURE CHANGE APPROVED`:
+Do not create any of the following without explicit approval containing
+`ARCHITECTURE CHANGE APPROVED`:
 
 - parallel data pipeline
 - replacement contract
@@ -305,9 +342,11 @@ Do not create any of the following without explicit approval containing `ARCHITE
 - new status system
 - broad component replacement
 
-For display, layout, formatting, sorting, filtering, cards, toggles, visibility, or selection behavior, default to frontend-only.
+For display, layout, formatting, sorting, filtering, cards, toggles, visibility,
+or selection behavior, default to frontend-only.
 
-Backend work is justified only after proving the required data is absent from the existing responses, queries, caches, contexts, props, and normalized maps.
+Backend work is justified only after proving the required data is absent from
+the existing responses, queries, caches, contexts, props, and normalized maps.
 
 Default maximum:
 
@@ -411,6 +450,7 @@ requires any of the following:
 - replacing an existing shared query/cache path with a second source of truth
 - a broad component rewrite primarily to address performance
 
+
 ## Frontend safety
 
 Before adding an API call, inspect existing:
@@ -446,9 +486,10 @@ Preserve valid numeric zero values and distinguish zero from missing/null data.
 
 The pre-push hook runs automatically on every `git push origin main`:
 
-`# .githooks/pre-push — delegates to:`
-
-`python3 scripts/workspace_guard.py prepush`
+```bash
+# .githooks/pre-push — delegates to:
+python3 scripts/workspace_guard.py prepush
+```
 
 The hook validates:
 
@@ -456,23 +497,33 @@ The hook validates:
 - no conflicts
 - no divergence
 - no dirty committed source
-- TypeScript check (soft-warn: pre-existing errors warn but do not block; new errors that increase the count should be treated as a hard failure by the responsible agent)
+- TypeScript check (soft-warn: pre-existing errors warn but do not block;
+  new errors that increase the count should be treated as a hard failure
+  by the responsible agent)
 - production build (hard gate — `npm run build` must exit 0)
 - targeted tests for changed source areas
 
-**Note on TypeScript errors:** As of the guard installation, the project has 238 pre-existing TS errors across 39 files. These pre-date this guard. The production Vite build succeeds. Agents must not introduce NEW TS errors. A dedicated TS cleanup task is recommended.
+**Note on TypeScript errors:** As of the guard installation, the project has
+238 pre-existing TS errors across 39 files. These pre-date this guard. The
+production Vite build succeeds. Agents must not introduce NEW TS errors. A
+dedicated TS cleanup task is recommended.
 
 Before publishing to Replit deployment:
 
-`python3 scripts/workspace_guard.py prepublish`
+```bash
+python3 scripts/workspace_guard.py prepublish
+```
 
-This additionally requires that all authored source is already at origin/main (no unpushed source commits).
+This additionally requires that all authored source is already at origin/main
+(no unpushed source commits).
 
 ## Manual-edit workflow
 
 When a human is editing directly:
 
-`python3 scripts/workspace_guard.py claim --actor manual --task "description"`
+```bash
+python3 scripts/workspace_guard.py claim --actor manual --task "description"
+```
 
 While a manual claim is active, coding agents must refuse production edits.
 
@@ -488,9 +539,12 @@ Agents must never silently discard or overwrite manual uncommitted changes.
 
 After any Replit publish:
 
-`python3 scripts/workspace_guard.py postpublish`
+```bash
+python3 scripts/workspace_guard.py postpublish
+```
 
-This is read-only. It identifies new publish commits, classifies each as GENERATED-ONLY or CONTAINS-SOURCE, and reports synchronization status.
+This is read-only. It identifies new publish commits, classifies each as
+GENERATED-ONLY or CONTAINS-SOURCE, and reports synchronization status.
 
 Generated-only publish commits are harmless source-wise.
 
@@ -537,6 +591,8 @@ For an audit-only, read-only, or no-commit task:
 - mark the commit SHA and message as not applicable
 - mark the complete task commit diff as not applicable
 
-Use the committed patch as the source of truth for the final diff when a commit exists.
+Use the committed patch as the source of truth for the final diff when a
+commit exists.
 
-Stop after writing the assigned report. For implementation tasks, this follows the push. Never force-push. Never push to another branch.
+Stop after writing the assigned report. For implementation tasks, this follows
+the push. Never force-push. Never push to another branch.
