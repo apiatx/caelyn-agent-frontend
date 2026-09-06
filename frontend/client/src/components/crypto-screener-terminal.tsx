@@ -3,8 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { ExternalLink } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
-const AGENT_BACKEND_URL = 'https://fast-api-server-aidanpilon.replit.app';
-
 type NullableNumber = number | null;
 
 interface CryptoScreenerRow {
@@ -74,7 +72,7 @@ const VOLUME_SORTS: Array<{ value: VolumeSort; label: string }> = [
 ];
 
 async function fetchCryptoScreener(headers: Record<string, string>): Promise<CryptoScreenerResponse> {
-  const response = await fetch(`${AGENT_BACKEND_URL}/api/crypto/screener`, {
+  const response = await fetch('/api/crypto/screener', {
     headers,
   });
   if (!response.ok) {

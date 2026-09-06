@@ -197,6 +197,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Proxy crypto screener data through the frontend origin so browsers never
+  // connect directly to the private-address-space FastAPI deployment.
+  app.get('/api/crypto/screener', async (req, res) => {
+    const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';
+    const FA_KEY = 'hippo_ak_7f3x9k2m4p8q1w5t';
+    try {
+      const upstream = await fetch(`${FA_URL}/api/crypto/screener`, {
+        headers: {
+          'X-API-Key': FA_KEY,
+          ...(req.headers.authorization
+            ? { Authorization: req.headers.authorization as string }
+            : {}),
+        },
+        signal: AbortSignal.timeout(30_000),
+      });
+      const data = await upstream.json().catch(() => ({}));
+      return res.status(upstream.status).json(data);
+    } catch (error: any) {
+      return res.status(502).json({
+        error: error?.message ?? 'Crypto screener upstream request failed',
+      });
+    }
+  });
+
   // POST /api/portfolio/categorize-themes — LLM classifies unclassified tickers into themes
   app.post('/api/portfolio/categorize-themes', async (req, res) => {
     const FA_URL = 'https://fast-api-server-aidanpilon.replit.app';

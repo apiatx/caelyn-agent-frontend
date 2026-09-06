@@ -4,7 +4,6 @@ import { ChartCandlestick, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import CryptoDetailModal from './CryptoDetailModal';
 
-const AGENT_BACKEND_URL = 'https://fast-api-server-aidanpilon.replit.app';
 type NullableNumber = number | null;
 type SortDirection = 'asc' | 'desc';
 
@@ -128,7 +127,7 @@ let universeRequest: Promise<[CanonicalResponse, CmcRow[], CmcRow[]]> | null = n
 function fetchUniverse(headers: Record<string, string>) {
   if (!universeRequest) {
     universeRequest = Promise.all([
-      fetchJson<CanonicalResponse>(`${AGENT_BACKEND_URL}/api/crypto/screener`, headers),
+      fetchJson<CanonicalResponse>('/api/crypto/screener', headers),
       fetchJson<CmcRow[]>('/api/coinmarketcap/top500-gainers'),
       fetchJson<CmcRow[]>('/api/coinmarketcap/trending'),
     ]).catch(error => {
