@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ExternalLink, Search } from 'lucide-react';
+import { ChartCandlestick, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import CryptoDetailModal from './CryptoDetailModal';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-aidanpilon.replit.app';
 type NullableNumber = number | null;
@@ -28,6 +29,7 @@ interface CmcRow {
 
 interface CanonicalRow {
   cmc_id?: number | null;
+  coingecko_id?: string | null;
   name?: string;
   symbol?: string;
   slug?: string | null;
@@ -57,9 +59,10 @@ interface CanonicalResponse {
   rows?: CanonicalRow[];
 }
 
-interface UnifiedRow {
+export interface UnifiedRow {
   key: string;
   cmc_id: number | null;
+  coingecko_id: string | null;
   name: string;
   symbol: string;
   slug: string | null;
@@ -146,7 +149,7 @@ function safeSlug(row: UnifiedRow): string {
 
 function emptyRow(key: string): UnifiedRow {
   return {
-    key, cmc_id: null, name: '', symbol: '', slug: null, rank: null, price: null,
+    key, cmc_id: null, coingecko_id: null, name: '', symbol: '', slug: null, rank: null, price: null,
     change_1h_pct: null, change_24h_pct: null, change_7d_pct: null, change_30d_pct: null,
     market_cap: null, volume_24h: null, setup_label: null, pct_vs_sma_50: null,
     pct_vs_sma_150: null, pct_vs_sma_200: null, sma_50_rising: null,
@@ -209,6 +212,7 @@ function mergeRows(canonical: CanonicalRow[], gainers: CmcRow[], trending: CmcRo
     merged.set(key, {
       ...current,
       cmc_id: pick(row.cmc_id, current.cmc_id),
+      coingecko_id: pick(row.coingecko_id, current.coingecko_id),
       name: row.name || current.name || row.symbol || 'Unknown',
       symbol: normalizeSymbol(row.symbol) || current.symbol,
       slug: pick(row.slug, current.slug),
@@ -268,6 +272,7 @@ export default function CryptoUnifiedScreener() {
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('rank');
   const [direction, setDirection] = useState<SortDirection>('asc');
+  const [selectedRow, setSelectedRow] = useState<UnifiedRow | null>(null);
 
   const universe = useQuery<[CanonicalResponse, CmcRow[], CmcRow[]]>({
     queryKey: ['crypto-unified-screener'],
@@ -306,7 +311,8 @@ export default function CryptoUnifiedScreener() {
   const error = universe.error;
 
   return (
-    <section className="flex h-[calc(100vh-190px)] min-h-[430px] max-h-[820px] min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-black/45">
+    <>
+      <section className="flex h-[calc(100vh-190px)] min-h-[430px] max-h-[820px] min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-black/45">
       <div className="flex flex-col gap-3 border-b border-l-2 border-white/10 border-l-cyan-400/70 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-gray-100">Crypto Screener</h3>
@@ -356,10 +362,10 @@ export default function CryptoUnifiedScreener() {
                 return (
                   <tr key={row.key} className="group border-b border-white/[0.06] hover:bg-white/[0.025]">
                     <td className="px-3 py-2">
-                      <a href={`https://coinmarketcap.com/currencies/${safeSlug(row)}/`} target="_blank" rel="noopener noreferrer" className="block min-w-[130px] hover:text-cyan-200">
-                        <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-100">{row.name}<ExternalLink className="h-2.5 w-2.5 text-white/25 group-hover:text-cyan-300" /></span>
+                      <button type="button" onClick={() => setSelectedRow(row)} className="block min-w-[130px] text-left hover:text-cyan-200">
+                        <span className="flex items-center gap-1 text-[11px] font-semibold text-gray-100">{row.name}<ChartCandlestick className="h-2.5 w-2.5 text-white/25 group-hover:text-cyan-300" /></span>
                         <span className="font-mono text-[9px] uppercase tracking-wide text-gray-500">{row.symbol}</span>
-                      </a>
+                      </button>
                     </td>
                     <td className="px-2 py-2 text-right font-mono text-[10px] text-gray-400">{present(row.rank) ? `#${row.rank}` : '—'}</td>
                     <td className="px-2 py-2 text-right font-mono text-[10px] text-gray-300">{formatPrice(row.price)}</td>
@@ -382,6 +388,14 @@ export default function CryptoUnifiedScreener() {
           </table>
         )}
       </div>
-    </section>
+      </section>
+      {selectedRow && (
+        <CryptoDetailModal
+          row={selectedRow}
+          cmcSlug={safeSlug(selectedRow)}
+          onClose={() => setSelectedRow(null)}
+        />
+      )}
+    </>
   );
 }
