@@ -66,7 +66,8 @@ GENERATED_PREFIX: tuple[str, ...] = (
     ".opencode/",
     ".codex/",
     ".agent-state/",
-    "attached_assets/",    # uploaded task instruction files
+    "attached_assets/Pasted-",
+    "frontend/attached_assets/Pasted-",
 )
 
 SOURCE_EXTENSIONS: tuple[str, ...] = (
@@ -636,12 +637,14 @@ def cmd_preflight(args: argparse.Namespace) -> int:
     if claim and claim.get("actor") not in ("manual",):
         age = claim_age_seconds(claim)
         stale = is_stale(claim)
+        requested_actor = getattr(args, "actor", None)
         if stale:
             print(f"WARNING: Stale lock held by '{claim.get('actor')}' ({format_age(age)}) — "
                   "not auto-released. Run `release --force` with user authorization.")
         # A stale lock is a warning, not a hard blocker for preflight
-        # An active (non-stale) lock held by another actor IS a blocker
-        if not stale:
+        # A fresh lock is allowed only when the caller explicitly identifies
+        # itself as the same actor that owns the claim.
+        if not stale and requested_actor != claim.get("actor"):
             errors.append(
                 f"Workspace locked by '{claim.get('actor')}' ({format_age(age)}). "
                 "Release it before starting new work."
@@ -1103,7 +1106,11 @@ def main() -> int:
     sub.add_parser("status", help="Show workspace status")
 
     # preflight
-    sub.add_parser("preflight", help="Check preconditions before editing")
+    p_preflight = sub.add_parser("preflight", help="Check preconditions before editing")
+    p_preflight.add_argument(
+        "--actor",
+        help="Caller identity; permits preflight when it matches the active non-manual claim",
+    )
 
     # sync
     sub.add_parser("sync", help="Safely reconcile local main with origin/main")

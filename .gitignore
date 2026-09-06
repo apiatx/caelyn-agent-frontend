@@ -1,9 +1,19 @@
 # Replit agent operational state — never commit
 .agent-state/
+.opencode-persistent/
+.opencode/
 
 # Agent report directories
+.opencode-reports/
 .codex-reports/
 .codex/
+
+# Pasted task uploads only — preserve real application assets
+attached_assets/Pasted-*
+frontend/attached_assets/Pasted-*
+
+# Runtime-generated persistent cache
+frontend/market-overview-cache.json
 
 # Existing ignores
 node_modules/

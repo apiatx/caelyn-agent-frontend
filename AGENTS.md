@@ -183,9 +183,9 @@ python3 scripts/workspace_guard.py release
 
 Every completed source implementation follows this exact lifecycle:
 
-1. `claim` — lock the workspace
-2. `sync` — reconcile only proven-safe Git drift
-3. `preflight` — verify preconditions
+1. `sync` — reconcile only proven-safe Git drift
+2. `claim --actor <runtime> --task "..."` — lock the workspace
+3. `preflight --actor <runtime>` — verify preconditions for the claim owner
 4. edit — make only approved changes
 5. validate — typecheck + build + targeted tests
 6. stage exact paths only
@@ -285,7 +285,7 @@ rebase, reset, cherry-pick, or force-push.
 Check case with:
 
 ```bash
-python3 scripts/workspace_guard.py preflight
+python3 scripts/workspace_guard.py preflight --actor <runtime>
 ```
 
 ## Source synchronization and handoff contract
@@ -338,7 +338,16 @@ Generated (explicit allowlist):
 - `.opencode-reports/**`, `.codex-reports/**`
 - `.opencode-persistent/**`, `.opencode/**`, `.codex/**`
 - `.agent-state/**`
-- `attached_assets/**`
+- `attached_assets/Pasted-*`
+- `frontend/attached_assets/Pasted-*`
+
+Generated-artifact invariant:
+
+- agent reports are never Git-tracked
+- runtime cache files are never staged
+- pasted task attachments are never staged
+- Replit checkpoint/generated-only commits are not valid source handoff state
+- `workspace_guard.py sync` is the only automatic generated-only reconciliation path
 
 When uncertain: SOURCE.
 

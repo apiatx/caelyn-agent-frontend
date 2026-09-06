@@ -134,6 +134,14 @@ class TestClassifier(unittest.TestCase):
             wg.classify_path("attached_assets/Pasted-TASK-DESCRIPTION.txt"),
             "GENERATED"
         )
+        self.assertEqual(
+            wg.classify_path("frontend/attached_assets/Pasted-anything.txt"),
+            "GENERATED"
+        )
+
+    def test_unknown_attached_assets_remain_source(self):
+        self.assertEqual(wg.classify_path("attached_assets/logo.png"), "SOURCE")
+        self.assertEqual(wg.classify_path("frontend/attached_assets/photo.jpg"), "SOURCE")
 
     def test_unknown_json_is_source_conservative(self):
         # Any JSON not in the explicit generated list defaults to SOURCE
@@ -223,6 +231,48 @@ class TestLock(unittest.TestCase):
         claim = wg.load_claim()
         self.assertFalse(wg.is_stale(claim))
         self.assertEqual(claim["actor"], "manual")
+
+
+class TestPreflight(unittest.TestCase):
+
+    def _args(self, actor=None):
+        return MagicMock(actor=actor)
+
+    def _run(self, claim=None, actor=None, stale=False):
+        with patch.object(wg, "fetch_origin"), \
+             patch.object(wg, "current_branch", return_value="main"), \
+             patch.object(wg, "has_conflicts", return_value=False), \
+             patch.object(wg, "git_out", return_value=str(wg.REPO_ROOT)), \
+             patch.object(wg, "git_case", return_value="A"), \
+             patch.object(wg, "ahead_behind", return_value=(0, 0)), \
+             patch.object(wg, "load_claim", return_value=claim), \
+             patch.object(wg, "claim_age_seconds", return_value=60), \
+             patch.object(wg, "is_stale", return_value=stale):
+            return wg.cmd_preflight(self._args(actor))
+
+    def test_no_lock_case_a_passes(self):
+        self.assertEqual(self._run(), 0)
+
+    def test_same_actor_active_lock_passes(self):
+        self.assertEqual(
+            self._run(claim={"actor": "replit-agent"}, actor="replit-agent"),
+            0,
+        )
+
+    def test_different_actor_active_lock_fails(self):
+        self.assertEqual(
+            self._run(claim={"actor": "deepseek"}, actor="replit-agent"),
+            1,
+        )
+
+    def test_active_non_manual_lock_without_actor_fails(self):
+        self.assertEqual(self._run(claim={"actor": "replit-agent"}), 1)
+
+    def test_stale_lock_remains_warning_not_blocker(self):
+        self.assertEqual(
+            self._run(claim={"actor": "deepseek"}, actor="replit-agent", stale=True),
+            0,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -394,7 +444,7 @@ class TestSync(unittest.TestCase):
 
     def test_multiple_generated_commits_are_reconciled(self):
         _origin, clone = self.make_pair()
-        add_commit(clone, "attached_assets/task.txt", "task\n", "instructions")
+        add_commit(clone, "attached_assets/Pasted-task.txt", "task\n", "instructions")
         add_commit(clone, "frontend/market-overview-cache.json", "{}\n", "cache")
         subprocess.run(["git", "commit", "--allow-empty", "-m", "Published your App"],
                        cwd=clone, check=True, capture_output=True)
@@ -403,12 +453,12 @@ class TestSync(unittest.TestCase):
             git_in(clone, "rev-list", "--left-right", "--count", "HEAD...origin/main"),
             "0\t0",
         )
-        self.assertTrue((clone / "attached_assets/task.txt").exists())
+        self.assertTrue((clone / "attached_assets/Pasted-task.txt").exists())
         self.assertTrue((clone / "frontend/market-overview-cache.json").exists())
 
     def test_attached_assets_only_commit_is_reconciled(self):
         _origin, clone = self.make_pair()
-        add_commit(clone, "attached_assets/task.txt", "task\n", "instructions")
+        add_commit(clone, "attached_assets/Pasted-task.txt", "task\n", "instructions")
         self.assertEqual(self.run_sync(), 0)
         self.assertEqual(git_in(clone, "rev-list", "--count", "origin/main..HEAD"), "0")
 
@@ -440,7 +490,7 @@ class TestSync(unittest.TestCase):
 
     def test_committed_source_to_generated_rename_refuses(self):
         _origin, clone = self.make_pair()
-        destination = clone / "attached_assets/app.ts"
+        destination = clone / "attached_assets/Pasted-app.ts"
         destination.parent.mkdir(parents=True, exist_ok=True)
         (clone / "src/app.ts").rename(destination)
         subprocess.run(["git", "add", "-A"], cwd=clone, check=True)
@@ -453,9 +503,9 @@ class TestSync(unittest.TestCase):
     def test_source_change_in_merge_commit_refuses(self):
         _origin, clone = self.make_pair()
         git_in(clone, "checkout", "-b", "generated-side")
-        add_commit(clone, "attached_assets/side.txt", "side\n", "side generated")
+        add_commit(clone, "attached_assets/Pasted-side.txt", "side\n", "side generated")
         git_in(clone, "checkout", "main")
-        add_commit(clone, "attached_assets/main.txt", "main\n", "main generated")
+        add_commit(clone, "attached_assets/Pasted-main.txt", "main\n", "main generated")
         subprocess.run(
             ["git", "merge", "--no-ff", "--no-commit", "generated-side"],
             cwd=clone, check=True, capture_output=True,
@@ -470,7 +520,7 @@ class TestSync(unittest.TestCase):
 
     def test_staged_source_to_generated_rename_refuses(self):
         _origin, clone = self.make_pair()
-        destination = clone / "attached_assets/app.ts"
+        destination = clone / "attached_assets/Pasted-app.ts"
         destination.parent.mkdir(parents=True, exist_ok=True)
         (clone / "src/app.ts").rename(destination)
         subprocess.run(["git", "add", "-A"], cwd=clone, check=True)
@@ -479,7 +529,7 @@ class TestSync(unittest.TestCase):
 
     def test_unstaged_source_to_generated_rename_refuses(self):
         _origin, clone = self.make_pair()
-        destination = clone / "attached_assets/app.ts"
+        destination = clone / "attached_assets/Pasted-app.ts"
         destination.parent.mkdir(parents=True, exist_ok=True)
         (clone / "src/app.ts").rename(destination)
         self.assertEqual(self.run_sync(), 1)
@@ -488,7 +538,7 @@ class TestSync(unittest.TestCase):
     def test_divergence_refuses(self):
         origin, clone = self.make_pair()
         add_commit(origin, "src/origin.ts", "origin\n", "origin")
-        add_commit(clone, "attached_assets/local.txt", "local\n", "local")
+        add_commit(clone, "attached_assets/Pasted-local.txt", "local\n", "local")
         before = git_in(clone, "rev-parse", "HEAD")
         self.assertEqual(self.run_sync(), 1)
         self.assertEqual(git_in(clone, "rev-parse", "HEAD"), before)
@@ -508,7 +558,7 @@ class TestSync(unittest.TestCase):
     def test_sync_never_changes_remote_ref(self):
         origin, clone = self.make_pair()
         remote_before = git_in(origin, "rev-parse", "main")
-        add_commit(clone, "attached_assets/task.txt", "task\n", "generated")
+        add_commit(clone, "attached_assets/Pasted-task.txt", "task\n", "generated")
         self.assertEqual(self.run_sync(), 0)
         self.assertEqual(git_in(origin, "rev-parse", "main"), remote_before)
 
