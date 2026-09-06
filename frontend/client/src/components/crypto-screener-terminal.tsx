@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-aidanpilon.replit.app';
 
@@ -71,14 +72,9 @@ const VOLUME_SORTS: Array<{ value: VolumeSort; label: string }> = [
   { value: 'volume_to_market_cap_pct', label: 'Vol/MC' },
 ];
 
-function getJwt(): string {
-  return localStorage.getItem('caelyn_jwt') || sessionStorage.getItem('caelyn_jwt') || '';
-}
-
-async function fetchCryptoScreener(): Promise<CryptoScreenerResponse> {
-  const token = getJwt();
+async function fetchCryptoScreener(headers: Record<string, string>): Promise<CryptoScreenerResponse> {
   const response = await fetch(`${AGENT_BACKEND_URL}/api/crypto/screener`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers,
   });
   if (!response.ok) {
     const body = await response.text().catch(() => '');
@@ -254,6 +250,7 @@ const controlClass = (active: boolean) =>
   }`;
 
 export default function CryptoScreenerTerminal() {
+  const { getAuthHeaders } = useAuth();
   const [trendFilter, setTrendFilter] = useState<TrendFilter>('all');
   const [trendSort, setTrendSort] = useState<TrendSort>('priority');
   const [trendDirection, setTrendDirection] = useState<SortDirection>('desc');
@@ -261,7 +258,7 @@ export default function CryptoScreenerTerminal() {
 
   const { data, isLoading, error } = useQuery<CryptoScreenerResponse>({
     queryKey: ['crypto-screener-terminal'],
-    queryFn: fetchCryptoScreener,
+    queryFn: () => fetchCryptoScreener(getAuthHeaders()),
     staleTime: Infinity,
     retry: false,
     refetchInterval: false,
