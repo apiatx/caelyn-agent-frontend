@@ -95,7 +95,7 @@ export default function AlphaSection() {
         <GlassCard className="p-3 sm:p-4 lg:p-6">
 
           {/* Screening Section - Side by Side Layout */}
-          <div className="flex flex-col lg:flex-row gap-6 lg:items-stretch">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
             {/* 24h Gainers (CMC Top 500) - Left Side */}
             <div className="lg:w-1/2 flex">
               <div className="w-full">

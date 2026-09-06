@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { ExternalLink } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const AGENT_BACKEND_URL = 'https://fast-api-server-aidanpilon.replit.app';
@@ -158,15 +159,28 @@ function valueTone(value: NullableNumber | undefined, nearZero = 0.5): string {
 }
 
 function AssetCell({ row }: { row: CryptoScreenerRow }) {
-  return (
-    <div className="min-w-[100px]">
-      <div className="truncate text-[11px] font-semibold text-gray-100" title={row.name || row.symbol}>
+  const content = (
+    <>
+      <div className="flex items-center gap-1 truncate text-[11px] font-semibold text-gray-100" title={row.name || row.symbol}>
         {row.name || row.symbol || '—'}
+        {row.slug && <ExternalLink className="h-2.5 w-2.5 shrink-0 text-white/25 group-hover:text-cyan-300" />}
       </div>
       <div className="mt-0.5 font-mono text-[9px] uppercase tracking-wide text-gray-500">
         {row.symbol || '—'}{row.rank != null ? ` · #${row.rank}` : ''}
       </div>
-    </div>
+    </>
+  );
+  return (
+    row.slug ? (
+      <a
+        href={`https://coinmarketcap.com/currencies/${row.slug}/`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group block min-w-[100px] hover:text-cyan-200"
+      >
+        {content}
+      </a>
+    ) : <div className="min-w-[100px]">{content}</div>
   );
 }
 
@@ -229,13 +243,13 @@ function PanelFrame({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex min-h-[640px] min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-black/45">
-      <div className={`border-b border-white/10 border-l-2 ${accentClass} px-3 py-3`}>
+    <section className="flex h-[320px] min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-black/45">
+      <div className={`border-b border-white/10 border-l-2 ${accentClass} px-3 py-2.5`}>
         <div className="flex min-w-0 items-center justify-between gap-3">
           <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-gray-100">{title}</h3>
           {refreshing && <span className="font-mono text-[9px] text-gray-500">refreshing…</span>}
         </div>
-        <div className="mt-2 flex flex-wrap gap-1">{controls}</div>
+        <div className="mt-1.5 flex flex-wrap gap-1">{controls}</div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">{children}</div>
     </section>
@@ -243,7 +257,7 @@ function PanelFrame({
 }
 
 const controlClass = (active: boolean) =>
-  `rounded border px-2 py-1 font-mono text-[9px] transition-colors ${
+  `rounded border px-1.5 py-0.5 font-mono text-[9px] transition-colors ${
     active
       ? 'border-white/25 bg-white/10 text-gray-100'
       : 'border-white/[0.07] bg-transparent text-gray-500 hover:border-white/15 hover:text-gray-300'
@@ -299,9 +313,9 @@ export default function CryptoScreenerTerminal() {
 
   if (isLoading) {
     return (
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         {['Trend / Breakout', 'Volume / Liquidity'].map(title => (
-          <div key={title} className="min-h-[220px] animate-pulse rounded-xl border border-white/10 bg-black/45 p-4">
+          <div key={title} className="h-[320px] animate-pulse rounded-xl border border-white/10 bg-black/45 p-4">
             <div className="text-xs font-bold uppercase tracking-wider text-gray-500">{title}</div>
             <div className="mt-8 text-center font-mono text-[10px] text-gray-600">Loading canonical screener…</div>
           </div>
@@ -312,7 +326,7 @@ export default function CryptoScreenerTerminal() {
 
   if (error) {
     return (
-      <div className="mt-6 rounded-xl border border-red-400/20 bg-red-950/10 px-4 py-5">
+      <div className="mt-4 rounded-xl border border-red-400/20 bg-red-950/10 px-4 py-5">
         <div className="text-xs font-semibold text-red-300">Crypto screening data is unavailable.</div>
         <div className="mt-1 font-mono text-[10px] text-gray-500">{error instanceof Error ? error.message : 'Unknown backend error'}</div>
       </div>
@@ -320,7 +334,7 @@ export default function CryptoScreenerTerminal() {
   }
 
   return (
-    <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
+    <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
       <PanelFrame
         title="Trend / Breakout"
         accentClass="border-l-cyan-400/70"
