@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { BarChart3, ExternalLink, TrendingUp, Link2, Star, Wallet, TrendingDown, Globe, Layers, Activity, Brain } from 'lucide-react';
@@ -8,6 +8,7 @@ import diamondImage from "@assets/images (4)_1757213323269.jpeg";
 import TopDailyGainersTop500 from './top-daily-gainers-top500';
 import TopTrendingCMC from './top-trending-cmc';
 import CryptoScreenerTerminal from './crypto-screener-terminal';
+import CryptoUnifiedScreener from './crypto-unified-screener';
 
 // Enhanced Glass Card component
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -56,6 +57,7 @@ const SafeLink: React.FC<SafeLinkProps> = ({ href, children, className = "" }) =
 };
 
 export default function AlphaSection() {
+  const [screeningView, setScreeningView] = useState<'terminal' | 'screener'>('terminal');
   const openInNewTab = (url: string) => {
     openSecureLink(url);
   };
@@ -94,24 +96,47 @@ export default function AlphaSection() {
       <div className="space-y-8">
         <GlassCard className="p-3 sm:p-4 lg:p-6">
 
-          {/* Screening Section - Side by Side Layout */}
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
-            {/* 24h Gainers (CMC Top 500) - Left Side */}
-            <div className="lg:w-1/2 flex">
-              <div className="w-full">
-                <TopDailyGainersTop500 />
-              </div>
-            </div>
-
-            {/* Top 20 by Volume - Right Side */}
-            <div className="lg:w-1/2 flex">
-              <div className="w-full">
-                <TopTrendingCMC />
-              </div>
+          <div className="mb-3 flex">
+            <div className="inline-flex rounded-md border border-white/10 bg-black/30 p-0.5" aria-label="Crypto screening view">
+              {(['terminal', 'screener'] as const).map(view => (
+                <button
+                  key={view}
+                  type="button"
+                  onClick={() => setScreeningView(view)}
+                  className={`rounded px-3 py-1 font-mono text-[10px] uppercase tracking-wide transition-colors ${
+                    screeningView === view ? 'bg-white/10 text-gray-100' : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  {view}
+                </button>
+              ))}
             </div>
           </div>
 
-          <CryptoScreenerTerminal />
+          {screeningView === 'terminal' ? (
+            <>
+              {/* Screening Section - Side by Side Layout */}
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+                {/* 24h Gainers (CMC Top 500) - Left Side */}
+                <div className="lg:w-1/2 flex">
+                  <div className="w-full">
+                    <TopDailyGainersTop500 />
+                  </div>
+                </div>
+
+                {/* Top 20 by Volume - Right Side */}
+                <div className="lg:w-1/2 flex">
+                  <div className="w-full">
+                    <TopTrendingCMC />
+                  </div>
+                </div>
+              </div>
+
+              <CryptoScreenerTerminal />
+            </>
+          ) : (
+            <CryptoUnifiedScreener />
+          )}
 
           {/* AltFins Market Data Widgets */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-8 mb-6">
