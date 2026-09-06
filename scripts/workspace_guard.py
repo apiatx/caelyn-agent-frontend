@@ -9,6 +9,7 @@ Commands
 --------
   claim          Claim the workspace for an actor/task
   status         Show current lock, git state, and working-tree classification
+  sync           Safely reconcile local main with origin/main
   preflight      Verify preconditions before editing (git state + lock)
   prepush        Full validation gate (git state + typecheck + build + tests)
   prepublish     Strict gate before Replit deployment publish
@@ -26,7 +27,7 @@ Git cases
 ---------
   A   HEAD == origin/main                        → proceed
   B   local behind, no divergence                → ff-only merge allowed
-  C-GENERATED   ahead, all commits generated     → proceed
+  C-GENERATED   ahead, all commits generated     → reconcile via sync
   C-SOURCE      ahead, some commits source       → stop unless completing task
   D   true divergence                            → stop, manual recovery required
 """
@@ -190,7 +191,10 @@ def commits_ahead() -> list[dict]:
     commits = []
     for sha in shas:
         subject = git_out("log", "-1", "--format=%s", sha)
-        files_out = git_out("diff-tree", "--no-commit-id", "-r", "--name-only", sha)
+        files_out = git_out(
+            "diff-tree", "-m", "--no-commit-id", "-r", "--no-renames",
+            "--name-only", sha
+        )
         files = [f for f in files_out.splitlines() if f]
         commits.append({"sha": sha, "subject": subject, "files": files})
     return commits
@@ -215,25 +219,25 @@ def classify_commits(commits: list[dict]) -> str:
 
 
 def dirty_source_files() -> list[str]:
-    """Return tracked SOURCE files with uncommitted modifications."""
-    # Use raw .stdout (not git_out) to preserve per-line leading whitespace.
-    # git_out() calls .strip() on the full output, which destroys the XY status
-    # prefix on the first line when there is only one dirty file, causing
-    # classify_path() to receive a truncated path (e.g. 'rontend/...' instead
-    # of 'frontend/...') that misses the GENERATED_EXACT allowlist.
-    out = _git("status", "--porcelain").stdout
-    dirty = []
-    for line in out.splitlines():
-        if len(line) < 3:
-            continue
-        status = line[:2].strip()
-        path = line[3:].strip()
-        # Ignore untracked
-        if "?" in line[:2]:
-            continue
-        if classify_path(path) == "SOURCE":
-            dirty.append(path)
-    return dirty
+    """Return all uncommitted SOURCE paths, including staged and untracked."""
+    paths: set[str] = set()
+    for args in (
+        ("diff", "--no-renames", "--name-only"),
+        ("diff", "--cached", "--no-renames", "--name-only"),
+        ("ls-files", "--others", "--exclude-standard"),
+    ):
+        out = git_out(*args)
+        paths.update(path for path in out.splitlines() if path)
+    return sorted(path for path in paths if classify_path(path) == "SOURCE")
+
+
+def staged_source_files() -> list[str]:
+    """Return staged SOURCE paths."""
+    out = git_out("diff", "--cached", "--no-renames", "--name-only")
+    return sorted(
+        path for path in out.splitlines()
+        if path and classify_path(path) == "SOURCE"
+    )
 
 
 def has_conflicts() -> bool:
@@ -242,6 +246,24 @@ def has_conflicts() -> bool:
         if line[:2] in ("DD", "AU", "UD", "UA", "DU", "AA", "UU"):
             return True
     return False
+
+
+def git_operation_in_progress() -> Optional[str]:
+    """Return the active merge/rebase/cherry-pick operation, if any."""
+    markers = (
+        ("MERGE_HEAD", "merge"),
+        ("CHERRY_PICK_HEAD", "cherry-pick"),
+        ("REBASE_HEAD", "rebase"),
+        ("rebase-merge", "rebase"),
+        ("rebase-apply", "rebase"),
+    )
+    for marker, operation in markers:
+        path = Path(git_out("rev-parse", "--git-path", marker))
+        if not path.is_absolute():
+            path = REPO_ROOT / path
+        if path.exists():
+            return operation
+    return None
 
 
 def git_case() -> str:
@@ -330,7 +352,7 @@ def run_build() -> tuple[int, str]:
 def changed_source_files_vs_origin() -> list[str]:
     """Return list of SOURCE files changed between origin/main and HEAD."""
     try:
-        out = git_out("diff", "--name-only", "origin/main..HEAD")
+        out = git_out("diff", "--no-renames", "--name-only", "origin/main..HEAD")
     except subprocess.CalledProcessError:
         return []
     return [f for f in out.splitlines() if f and classify_path(f) == "SOURCE"]
@@ -639,6 +661,111 @@ def cmd_preflight(args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_source_commits(commits: list[dict]) -> None:
+    for commit in commits:
+        source_paths = [
+            path for path in commit["files"]
+            if classify_path(path) == "SOURCE"
+        ]
+        if not source_paths:
+            continue
+        print(f"  {commit['sha']} {commit['subject']}")
+        for path in source_paths:
+            print(f"    SOURCE {path}")
+
+
+def cmd_sync(args: argparse.Namespace) -> int:
+    """Safely reconcile local main with origin/main without pushing."""
+    print("=== Source Synchronization ===")
+
+    root = git_out("rev-parse", "--show-toplevel")
+    if root != str(REPO_ROOT):
+        print(f"SYNC REFUSED: unexpected repository root: {root}")
+        return 1
+    if current_branch() != "main":
+        print(f"SYNC REFUSED: branch must be main (current: {current_branch()})")
+        return 1
+    operation = git_operation_in_progress()
+    if operation or has_conflicts():
+        detail = operation or "conflict"
+        print(f"SYNC REFUSED: Git {detail} state is in progress")
+        return 1
+
+    fetch_origin()
+    h = head_sha()
+    o = origin_sha()
+    ahead, behind = ahead_behind()
+    case = git_case()
+    dirty_source = dirty_source_files()
+    staged_source = staged_source_files()
+
+    if dirty_source or staged_source:
+        print("SYNC REFUSED: SOURCE work exists in the working tree or index.")
+        for path in sorted(set(dirty_source + staged_source)):
+            locations = []
+            if path in dirty_source:
+                locations.append("dirty")
+            if path in staged_source:
+                locations.append("staged")
+            print(f"  SOURCE {path} ({', '.join(locations)})")
+        return 1
+
+    print(f"HEAD={h}")
+    print(f"origin/main={o}")
+    print(f"case={case} ahead={ahead} behind={behind}")
+
+    if case == "A":
+        pass
+    elif case == "B":
+        result = _git("merge", "--ff-only", "origin/main", check=False)
+        if result.returncode != 0:
+            print("SYNC REFUSED: safe fast-forward could not be completed.")
+            if result.stderr.strip():
+                print(result.stderr.strip())
+            return 1
+    elif case == "C-GENERATED":
+        commits = commits_ahead()
+        # Keep generated/runtime working-copy artifacts while removing only the
+        # proven generated-only commits from local source history.
+        result = _git("reset", "--mixed", "origin/main", check=False)
+        if result.returncode != 0:
+            print("SYNC FAILED: generated-only local reconciliation failed.")
+            if result.stderr.strip():
+                print(result.stderr.strip())
+            return 1
+        print(f"Reconciled {len(commits)} generated-only local commit(s).")
+    elif case == "C-SOURCE":
+        print("SYNC REFUSED: local-only SOURCE commits must not be discarded.")
+        _print_source_commits(commits_ahead())
+        return 1
+    else:
+        print("SYNC REFUSED: true divergence requires manual recovery.")
+        print(f"  local HEAD:  {h}")
+        print(f"  origin/main: {o}")
+        print(f"  ahead={ahead} behind={behind}")
+        return 1
+
+    final_head = head_sha()
+    final_origin = origin_sha()
+    final_ahead, final_behind = ahead_behind()
+    final_dirty_source = dirty_source_files()
+    final_staged_source = staged_source_files()
+    if (
+        final_head != final_origin
+        or final_ahead != 0
+        or final_behind != 0
+        or final_dirty_source
+        or final_staged_source
+    ):
+        print("SYNC FAILED: post-reconciliation source invariant was not met.")
+        return 1
+
+    print("SOURCE_SYNCED=YES")
+    print("ahead=0")
+    print("behind=0")
+    return 0
+
+
 def cmd_prepush(args: argparse.Namespace) -> int:
     fetch_origin()
 
@@ -862,7 +989,10 @@ def cmd_postpublish(args: argparse.Namespace) -> int:
         for sha in shas:
             subject = git_out("log", "-1", "--format=%s", sha)
             author = git_out("log", "-1", "--format=%an <%ae>", sha)
-            files_out = git_out("diff-tree", "--no-commit-id", "-r", "--name-only", sha)
+            files_out = git_out(
+                "diff-tree", "-m", "--no-commit-id", "-r", "--no-renames",
+                "--name-only", sha
+            )
             files = [f for f in files_out.splitlines() if f]
             all_generated = all(classify_path(f) == "GENERATED" for f in files) if files else True
             tag = "GENERATED-ONLY" if all_generated else "CONTAINS-SOURCE"
@@ -874,7 +1004,10 @@ def cmd_postpublish(args: argparse.Namespace) -> int:
 
         if all(
             all(classify_path(f) == "GENERATED" for f in
-                git_out("diff-tree", "--no-commit-id", "-r", "--name-only", sha).splitlines()
+                git_out(
+                    "diff-tree", "-m", "--no-commit-id", "-r", "--no-renames",
+                    "--name-only", sha
+                ).splitlines()
                 if f)
             for sha in shas
         ):
@@ -972,6 +1105,9 @@ def main() -> int:
     # preflight
     sub.add_parser("preflight", help="Check preconditions before editing")
 
+    # sync
+    sub.add_parser("sync", help="Safely reconcile local main with origin/main")
+
     # prepush
     p_prepush = sub.add_parser("prepush", help="Full validation gate before git push")
     p_prepush.add_argument("--verbose", action="store_true",
@@ -999,6 +1135,7 @@ def main() -> int:
         "claim": cmd_claim,
         "status": cmd_status,
         "preflight": cmd_preflight,
+        "sync": cmd_sync,
         "prepush": cmd_prepush,
         "prepublish": cmd_prepublish,
         "postpublish": cmd_postpublish,

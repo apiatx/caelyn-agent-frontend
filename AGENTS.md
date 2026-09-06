@@ -183,17 +183,19 @@ python3 scripts/workspace_guard.py release
 
 Every completed source implementation follows this exact lifecycle:
 
-1. `preflight` — verify preconditions
-2. `claim` — lock the workspace
-3. edit — make only approved changes
-4. validate — typecheck + build + targeted tests
-5. stage exact paths only
-6. commit — one focused commit
-7. `prepush` guard (via hook on `git push`)
-8. `git push origin main` — push to remote
-9. verify `HEAD == origin/main`
-10. `release` — unlock workspace
-11. final report
+1. `claim` — lock the workspace
+2. `sync` — reconcile only proven-safe Git drift
+3. `preflight` — verify preconditions
+4. edit — make only approved changes
+5. validate — typecheck + build + targeted tests
+6. stage exact paths only
+7. commit — one focused commit
+8. `prepush` guard (via hook on `git push`)
+9. `git push origin main` — push to remote
+10. verify `HEAD == origin/main`
+11. run `sync` readback as needed; require ahead=0 and behind=0
+12. `release` — unlock workspace
+13. final report
 
 Successful completed source work must NOT be left only on local `main`.
 
@@ -267,11 +269,12 @@ Before editing, confirm which git case applies:
 
 **Case A** — `HEAD == origin/main` — proceed normally.
 
-**Case B** — local behind, no divergence — only `git fetch origin main` + `git
-merge --ff-only origin/main` is allowed. Never create a merge commit.
+**Case B** — local behind, no divergence — the guard may perform a proven-safe
+fast-forward synchronization. Never create a merge commit.
 
 **Case C-GENERATED** — local ahead, all commits are generated/runtime — work
-may proceed. Do not reset or rebase.
+may not be handed off in this state. It must be reconciled through guard `sync`
+before the next source task proceeds and before successful handoff.
 
 **Case C-SOURCE** — local ahead, commits include source changes — STOP unless
 these are the current actor's validated task commits being completed and pushed.
@@ -284,6 +287,34 @@ Check case with:
 ```bash
 python3 scripts/workspace_guard.py preflight
 ```
+
+## Source synchronization and handoff contract
+
+GitHub `origin/main` is the durable source-history counterpart to the live
+Replit working copy. Replit may transiently generate publish, checkpoint, cache,
+report, or uploaded-asset commits, but generated-only local commits are not an
+acceptable completed-task handoff state.
+
+The only authorized automatic reconciliation path is:
+
+```bash
+python3 scripts/workspace_guard.py sync
+```
+
+The canonical guard may fetch, fast-forward a behind-only local branch, or
+reconcile local generated-only commits after proving every ahead commit and all
+dirty/staged paths contain no SOURCE. It never pushes or changes remote history.
+It preserves generated working-copy artifacts during generated-only history
+reconciliation.
+
+Agents must never improvise raw reset, rebase, or history-cleanup commands under
+this rule. If SOURCE appears in any ahead commit or dirty/staged work, `sync`
+refuses and the agent stops. True divergence also refuses. No automatic
+force-push is ever permitted.
+
+Source work must be pushed normally before successful handoff. The required
+final SOURCE state is branch `main`, `HEAD == origin/main`, ahead=0, behind=0,
+with no dirty or staged SOURCE files and no unpushed SOURCE commits.
 
 ## Source / generated classifier
 

@@ -359,29 +359,204 @@ class TestGitCases(unittest.TestCase):
         self.assertNotEqual(rc, 0, "origin/main should NOT be ancestor of clone HEAD in diverged case")
 
 
+class TestSync(unittest.TestCase):
+
+    def setUp(self):
+        self.original_root = wg.REPO_ROOT
+
+    def tearDown(self):
+        wg.REPO_ROOT = self.original_root
+
+    def make_pair(self):
+        origin = make_temp_repo("src/app.ts")
+        clone = Path(tempfile.mkdtemp())
+        subprocess.run(["git", "clone", str(origin), str(clone)], check=True,
+                       capture_output=True)
+        git_in(clone, "config", "user.email", "test@test.com")
+        git_in(clone, "config", "user.name", "Test")
+        wg.REPO_ROOT = clone
+        return origin, clone
+
+    def run_sync(self):
+        return wg.cmd_sync(MagicMock())
+
+    def test_equal_is_successful_no_op(self):
+        _origin, clone = self.make_pair()
+        before = git_in(clone, "rev-parse", "HEAD")
+        self.assertEqual(self.run_sync(), 0)
+        self.assertEqual(git_in(clone, "rev-parse", "HEAD"), before)
+
+    def test_behind_only_fast_forwards(self):
+        origin, clone = self.make_pair()
+        expected = add_commit(origin, "src/new.ts", "export const y = 2;\n", "advance")
+        self.assertEqual(self.run_sync(), 0)
+        self.assertEqual(git_in(clone, "rev-parse", "HEAD"), expected)
+
+    def test_multiple_generated_commits_are_reconciled(self):
+        _origin, clone = self.make_pair()
+        add_commit(clone, "attached_assets/task.txt", "task\n", "instructions")
+        add_commit(clone, "frontend/market-overview-cache.json", "{}\n", "cache")
+        subprocess.run(["git", "commit", "--allow-empty", "-m", "Published your App"],
+                       cwd=clone, check=True, capture_output=True)
+        self.assertEqual(self.run_sync(), 0)
+        self.assertEqual(
+            git_in(clone, "rev-list", "--left-right", "--count", "HEAD...origin/main"),
+            "0\t0",
+        )
+        self.assertTrue((clone / "attached_assets/task.txt").exists())
+        self.assertTrue((clone / "frontend/market-overview-cache.json").exists())
+
+    def test_attached_assets_only_commit_is_reconciled(self):
+        _origin, clone = self.make_pair()
+        add_commit(clone, "attached_assets/task.txt", "task\n", "instructions")
+        self.assertEqual(self.run_sync(), 0)
+        self.assertEqual(git_in(clone, "rev-list", "--count", "origin/main..HEAD"), "0")
+
+    def test_market_cache_only_commit_is_reconciled(self):
+        _origin, clone = self.make_pair()
+        add_commit(clone, "frontend/market-overview-cache.json", "{}\n", "cache")
+        self.assertEqual(self.run_sync(), 0)
+        self.assertEqual(git_in(clone, "rev-list", "--count", "origin/main..HEAD"), "0")
+
+    def test_agents_ahead_refuses(self):
+        _origin, clone = self.make_pair()
+        add_commit(clone, "AGENTS.md", "source\n", "source docs")
+        before = git_in(clone, "rev-parse", "HEAD")
+        self.assertEqual(self.run_sync(), 1)
+        self.assertEqual(git_in(clone, "rev-parse", "HEAD"), before)
+
+    def test_executable_source_ahead_refuses(self):
+        _origin, _clone = self.make_pair()
+        add_commit(wg.REPO_ROOT, "frontend/client/src/app.tsx",
+                   "export const App = 1;\n", "source")
+        self.assertEqual(self.run_sync(), 1)
+
+    def test_dirty_and_staged_source_refuse(self):
+        _origin, clone = self.make_pair()
+        (clone / "src/app.ts").write_text("dirty\n")
+        self.assertEqual(self.run_sync(), 1)
+        subprocess.run(["git", "add", "src/app.ts"], cwd=clone, check=True)
+        self.assertEqual(self.run_sync(), 1)
+
+    def test_committed_source_to_generated_rename_refuses(self):
+        _origin, clone = self.make_pair()
+        destination = clone / "attached_assets/app.ts"
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        (clone / "src/app.ts").rename(destination)
+        subprocess.run(["git", "add", "-A"], cwd=clone, check=True)
+        subprocess.run(["git", "commit", "-m", "rename source"], cwd=clone,
+                       check=True, capture_output=True)
+        before = git_in(clone, "rev-parse", "HEAD")
+        self.assertEqual(self.run_sync(), 1)
+        self.assertEqual(git_in(clone, "rev-parse", "HEAD"), before)
+
+    def test_source_change_in_merge_commit_refuses(self):
+        _origin, clone = self.make_pair()
+        git_in(clone, "checkout", "-b", "generated-side")
+        add_commit(clone, "attached_assets/side.txt", "side\n", "side generated")
+        git_in(clone, "checkout", "main")
+        add_commit(clone, "attached_assets/main.txt", "main\n", "main generated")
+        subprocess.run(
+            ["git", "merge", "--no-ff", "--no-commit", "generated-side"],
+            cwd=clone, check=True, capture_output=True,
+        )
+        (clone / "src/app.ts").write_text("export const merged = true;\n")
+        subprocess.run(["git", "add", "src/app.ts"], cwd=clone, check=True)
+        subprocess.run(["git", "commit", "-m", "merge with source resolution"],
+                       cwd=clone, check=True, capture_output=True)
+        before = git_in(clone, "rev-parse", "HEAD")
+        self.assertEqual(self.run_sync(), 1)
+        self.assertEqual(git_in(clone, "rev-parse", "HEAD"), before)
+
+    def test_staged_source_to_generated_rename_refuses(self):
+        _origin, clone = self.make_pair()
+        destination = clone / "attached_assets/app.ts"
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        (clone / "src/app.ts").rename(destination)
+        subprocess.run(["git", "add", "-A"], cwd=clone, check=True)
+        self.assertEqual(self.run_sync(), 1)
+        self.assertTrue(destination.exists())
+
+    def test_unstaged_source_to_generated_rename_refuses(self):
+        _origin, clone = self.make_pair()
+        destination = clone / "attached_assets/app.ts"
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        (clone / "src/app.ts").rename(destination)
+        self.assertEqual(self.run_sync(), 1)
+        self.assertTrue(destination.exists())
+
+    def test_divergence_refuses(self):
+        origin, clone = self.make_pair()
+        add_commit(origin, "src/origin.ts", "origin\n", "origin")
+        add_commit(clone, "attached_assets/local.txt", "local\n", "local")
+        before = git_in(clone, "rev-parse", "HEAD")
+        self.assertEqual(self.run_sync(), 1)
+        self.assertEqual(git_in(clone, "rev-parse", "HEAD"), before)
+
+    def test_wrong_branch_refuses(self):
+        _origin, clone = self.make_pair()
+        git_in(clone, "checkout", "-b", "feature")
+        self.assertEqual(self.run_sync(), 1)
+
+    def test_git_operation_in_progress_refuses(self):
+        _origin, clone = self.make_pair()
+        before = git_in(clone, "rev-parse", "HEAD")
+        with patch.object(wg, "git_operation_in_progress", return_value="merge"):
+            self.assertEqual(self.run_sync(), 1)
+        self.assertEqual(git_in(clone, "rev-parse", "HEAD"), before)
+
+    def test_sync_never_changes_remote_ref(self):
+        origin, clone = self.make_pair()
+        remote_before = git_in(origin, "rev-parse", "main")
+        add_commit(clone, "attached_assets/task.txt", "task\n", "generated")
+        self.assertEqual(self.run_sync(), 0)
+        self.assertEqual(git_in(origin, "rev-parse", "main"), remote_before)
+
+
 # ---------------------------------------------------------------------------
-# 4. Dirty-file tests
+# 4. Sync command and dirty-file tests
 # ---------------------------------------------------------------------------
 
 class TestDirtyFiles(unittest.TestCase):
 
     def test_dirty_ts_source_rejected(self):
         """dirty_source_files() should include .ts files."""
-        with patch.object(wg, "git_out") as mock_git:
-            mock_git.return_value = " M frontend/client/src/pages/watchlist.tsx"
+        with patch.object(
+            wg,
+            "git_out",
+            side_effect=lambda *args: (
+                "frontend/client/src/pages/watchlist.tsx"
+                if args == ("diff", "--no-renames", "--name-only")
+                else ""
+            ),
+        ):
             result = wg.dirty_source_files()
             self.assertIn("frontend/client/src/pages/watchlist.tsx", result)
 
     def test_dirty_tsx_source_rejected(self):
-        with patch.object(wg, "git_out") as mock_git:
-            mock_git.return_value = " M frontend/client/src/components/Foo.tsx"
+        with patch.object(
+            wg,
+            "git_out",
+            side_effect=lambda *args: (
+                "frontend/client/src/components/Foo.tsx"
+                if args == ("diff", "--cached", "--no-renames", "--name-only")
+                else ""
+            ),
+        ):
             result = wg.dirty_source_files()
             self.assertIn("frontend/client/src/components/Foo.tsx", result)
 
     def test_dirty_market_cache_accepted(self):
         """market-overview-cache.json is GENERATED — should NOT appear in dirty_source_files."""
-        with patch.object(wg, "git_out") as mock_git:
-            mock_git.return_value = " M frontend/market-overview-cache.json"
+        with patch.object(
+            wg,
+            "git_out",
+            side_effect=lambda *args: (
+                "frontend/market-overview-cache.json"
+                if args == ("diff", "--no-renames", "--name-only")
+                else ""
+            ),
+        ):
             result = wg.dirty_source_files()
             self.assertNotIn("frontend/market-overview-cache.json", result)
 
