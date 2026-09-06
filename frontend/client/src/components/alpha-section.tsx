@@ -7,6 +7,7 @@ import onchainImage from "@assets/images_1756750962640.jpeg";
 import diamondImage from "@assets/images (4)_1757213323269.jpeg";
 import TopDailyGainersTop500 from './top-daily-gainers-top500';
 import TopTrendingCMC from './top-trending-cmc';
+import CryptoScreenerTerminal from './crypto-screener-terminal';
 
 // Enhanced Glass Card component
 const GlassCard = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
@@ -109,6 +110,8 @@ export default function AlphaSection() {
               </div>
             </div>
           </div>
+
+          <CryptoScreenerTerminal />
 
           {/* AltFins Market Data Widgets */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-8 mb-6">
