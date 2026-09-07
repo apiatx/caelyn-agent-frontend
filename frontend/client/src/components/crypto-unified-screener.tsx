@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChartCandlestick, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import CryptoDetailModal from './CryptoDetailModal';
+import type { CryptoDetailRow } from './CryptoDetailModal';
 
 type NullableNumber = number | null;
 type SortDirection = 'asc' | 'desc';
@@ -58,33 +59,10 @@ interface CanonicalResponse {
   rows?: CanonicalRow[];
 }
 
-export interface UnifiedRow {
+export interface UnifiedRow extends CryptoDetailRow {
   key: string;
   cmc_id: number | null;
-  coingecko_id: string | null;
-  name: string;
-  symbol: string;
   slug: string | null;
-  rank: NullableNumber;
-  price: NullableNumber;
-  change_1h_pct: NullableNumber;
-  change_24h_pct: NullableNumber;
-  change_7d_pct: NullableNumber;
-  change_30d_pct: NullableNumber;
-  market_cap: NullableNumber;
-  volume_24h: NullableNumber;
-  setup_label: string | null;
-  pct_vs_sma_50: NullableNumber;
-  pct_vs_sma_150: NullableNumber;
-  pct_vs_sma_200: NullableNumber;
-  sma_50_rising: boolean | null;
-  sma_150_rising: boolean | null;
-  sma_200_rising: boolean | null;
-  bullish_ma_stack: boolean | null;
-  volume_change_24h_pct: NullableNumber;
-  volume_delta_7d_pct: NullableNumber;
-  vol_x_7d: NullableNumber;
-  volume_to_market_cap_pct: NullableNumber;
 }
 
 type SortKey = Exclude<{

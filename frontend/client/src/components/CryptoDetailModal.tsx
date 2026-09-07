@@ -1,15 +1,69 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import type { UnifiedRow } from './crypto-unified-screener';
+
+type NullableNumber = number | null;
+
+export interface CryptoDetailRow {
+  coingecko_id: string | null;
+  name: string;
+  symbol: string;
+  rank: NullableNumber;
+  price: NullableNumber;
+  change_1h_pct: NullableNumber;
+  change_24h_pct: NullableNumber;
+  change_7d_pct: NullableNumber;
+  change_30d_pct: NullableNumber;
+  market_cap: NullableNumber;
+  volume_24h: NullableNumber;
+  setup_label: string | null;
+  pct_vs_sma_50: NullableNumber;
+  pct_vs_sma_150: NullableNumber;
+  pct_vs_sma_200: NullableNumber;
+  sma_50_rising: boolean | null;
+  sma_150_rising: boolean | null;
+  sma_200_rising: boolean | null;
+  bullish_ma_stack: boolean | null;
+  volume_change_24h_pct: NullableNumber;
+  volume_delta_7d_pct: NullableNumber;
+  vol_x_7d: NullableNumber;
+  volume_to_market_cap_pct: NullableNumber;
+}
 
 interface CryptoDetailModalProps {
-  row: UnifiedRow;
+  row: CryptoDetailRow;
   cmcSlug: string;
   onClose: () => void;
 }
 
-type NullableNumber = number | null;
+export function createCryptoDetailRow(
+  row: Pick<CryptoDetailRow, 'name' | 'symbol'> & Partial<CryptoDetailRow>,
+): CryptoDetailRow {
+  return {
+    coingecko_id: null,
+    rank: null,
+    price: null,
+    change_1h_pct: null,
+    change_24h_pct: null,
+    change_7d_pct: null,
+    change_30d_pct: null,
+    market_cap: null,
+    volume_24h: null,
+    setup_label: null,
+    pct_vs_sma_50: null,
+    pct_vs_sma_150: null,
+    pct_vs_sma_200: null,
+    sma_50_rising: null,
+    sma_150_rising: null,
+    sma_200_rising: null,
+    bullish_ma_stack: null,
+    volume_change_24h_pct: null,
+    volume_delta_7d_pct: null,
+    vol_x_7d: null,
+    volume_to_market_cap_pct: null,
+    ...row,
+  };
+}
 
 const COMMON_BINANCE_SYMBOLS = new Set([
   'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'AVAX', 'DOT', 'MATIC', 'LINK',
@@ -79,6 +133,9 @@ function tradingViewSymbol(symbol: string) {
 export default function CryptoDetailModal({ row, cmcSlug, onClose }: CryptoDetailModalProps) {
   const [interval, setInterval] = useState('1D');
   const tvSymbol = tradingViewSymbol(row.symbol);
+  const coinGeckoUrl = row.coingecko_id
+    ? `https://www.coingecko.com/en/coins/${row.coingecko_id}`
+    : `https://www.coingecko.com/en/search?query=${encodeURIComponent(row.symbol)}`;
   const hasStack = present(row.pct_vs_sma_50)
     && present(row.pct_vs_sma_150)
     && present(row.pct_vs_sma_200);
@@ -195,16 +252,14 @@ export default function CryptoDetailModal({ row, cmcSlug, onClose }: CryptoDetai
             >
               CoinMarketCap ↗
             </a>
-            {row.coingecko_id && (
-              <a
-                href={`https://www.coingecko.com/en/coins/${row.coingecko_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 font-mono text-[10px] font-semibold text-gray-200 transition hover:border-cyan-400/30 hover:text-cyan-200"
-              >
-                CoinGecko ↗
-              </a>
-            )}
+            <a
+              href={coinGeckoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 font-mono text-[10px] font-semibold text-gray-200 transition hover:border-cyan-400/30 hover:text-cyan-200"
+            >
+              CoinGecko ↗
+            </a>
           </div>
         </div>
       </div>

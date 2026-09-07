@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ExternalLink } from 'lucide-react';
+import { ChartCandlestick } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import CryptoDetailModal, { createCryptoDetailRow } from './CryptoDetailModal';
 
 type NullableNumber = number | null;
 
@@ -156,29 +157,17 @@ function valueTone(value: NullableNumber | undefined, nearZero = 0.5): string {
   return value > 0 ? 'text-emerald-400/90' : 'text-red-400/90';
 }
 
-function AssetCell({ row }: { row: CryptoScreenerRow }) {
-  const content = (
-    <>
+function AssetCell({ row, onOpen }: { row: CryptoScreenerRow; onOpen: () => void }) {
+  return (
+    <button type="button" onClick={onOpen} className="group block min-w-[100px] text-left hover:text-cyan-200">
       <div className="flex items-center gap-1 truncate text-[11px] font-semibold text-gray-100" title={row.name || row.symbol}>
         {row.name || row.symbol || '—'}
-        {row.slug && <ExternalLink className="h-2.5 w-2.5 shrink-0 text-white/25 group-hover:text-cyan-300" />}
+        <ChartCandlestick className="h-2.5 w-2.5 shrink-0 text-white/25 group-hover:text-cyan-300" />
       </div>
       <div className="mt-0.5 font-mono text-[9px] uppercase tracking-wide text-gray-500">
         {row.symbol || '—'}{row.rank != null ? ` · #${row.rank}` : ''}
       </div>
-    </>
-  );
-  return (
-    row.slug ? (
-      <a
-        href={`https://coinmarketcap.com/currencies/${row.slug}/`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group block min-w-[100px] hover:text-cyan-200"
-      >
-        {content}
-      </a>
-    ) : <div className="min-w-[100px]">{content}</div>
+    </button>
   );
 }
 
@@ -263,6 +252,7 @@ const controlClass = (active: boolean) =>
 
 export default function CryptoScreenerTerminal() {
   const { getAuthHeaders } = useAuth();
+  const [selectedRow, setSelectedRow] = useState<CryptoScreenerRow | null>(null);
   const [trendFilter, setTrendFilter] = useState<TrendFilter>('all');
   const [trendSort, setTrendSort] = useState<TrendSort>('priority');
   const [trendDirection, setTrendDirection] = useState<SortDirection>('desc');
@@ -369,7 +359,7 @@ export default function CryptoScreenerTerminal() {
                   row.holding_above_50 || row.holding_above_150 || row.holding_above_200);
               return (
                 <tr key={row.cmc_id ?? row.coingecko_id ?? row.symbol} className="border-b border-white/[0.06] hover:bg-white/[0.025]">
-                  <td className="px-3 py-2"><AssetCell row={row} /></td>
+                  <td className="px-3 py-2"><AssetCell row={row} onOpen={() => setSelectedRow(row)} /></td>
                   <td className="whitespace-nowrap px-2 py-2 text-right font-mono text-[10px] tabular-nums text-gray-300">{formatPrice(row.price)}</td>
                   <td className="max-w-[150px] px-2 py-2 text-[9px] font-semibold text-cyan-200/80">
                     <span className="line-clamp-2">{row.setup_label || '—'}{showVolume && <span className="ml-1 text-emerald-400/80">↑ VOL</span>}</span>
@@ -423,7 +413,7 @@ export default function CryptoScreenerTerminal() {
           <tbody>
             {volumeRows.map(row => (
               <tr key={row.cmc_id ?? row.coingecko_id ?? row.symbol} className="border-b border-white/[0.06] hover:bg-white/[0.025]">
-                <td className="px-3 py-2"><AssetCell row={row} /></td>
+                <td className="px-3 py-2"><AssetCell row={row} onOpen={() => setSelectedRow(row)} /></td>
                 <td className="whitespace-nowrap px-2 py-2 text-right font-mono text-[10px] tabular-nums text-gray-300">{formatPrice(row.price)}</td>
                 <td className="whitespace-nowrap px-2 py-2 text-right font-mono text-[10px] tabular-nums text-gray-300">{formatCompactUsd(row.volume_24h)}</td>
                 <td className={`whitespace-nowrap px-2 py-2 text-right font-mono text-[10px] tabular-nums ${valueTone(row.volume_change_24h_pct)}`}>{formatPercent(row.volume_change_24h_pct)}</td>
@@ -438,6 +428,20 @@ export default function CryptoScreenerTerminal() {
           </tbody>
         </table>
       </PanelFrame>
+      {selectedRow && (
+        <CryptoDetailModal
+          row={createCryptoDetailRow({
+            ...selectedRow,
+            change_1h_pct: null,
+            change_24h_pct: null,
+            change_7d_pct: null,
+            change_30d_pct: null,
+            market_cap: null,
+          })}
+          cmcSlug={selectedRow.slug || selectedRow.name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')}
+          onClose={() => setSelectedRow(null)}
+        />
+      )}
     </div>
   );
 }

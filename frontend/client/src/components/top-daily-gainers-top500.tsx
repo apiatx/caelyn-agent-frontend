@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ChartCandlestick } from 'lucide-react';
+import CryptoDetailModal, { createCryptoDetailRow, type CryptoDetailRow } from './CryptoDetailModal';
 
 interface CoinData {
   id: number;
@@ -24,6 +25,7 @@ const TopDailyGainersTop500 = () => {
   const [gainers, setGainers] = useState<CoinData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCoin, setSelectedCoin] = useState<{ row: CryptoDetailRow; slug: string } | null>(null);
 
   useEffect(() => {
     const fetchGainers = async () => {
@@ -86,14 +88,32 @@ const TopDailyGainersTop500 = () => {
     return `${prefix}${change.toFixed(2)}%`;
   };
 
-  const coinUrl = (coin: CoinData) => {
-    const slug = coin.slug || coin.name
+  const coinSlug = (coin: CoinData) => {
+    return coin.slug || coin.name
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
-    return `https://coinmarketcap.com/currencies/${slug}/`;
+  };
+
+  const openCoin = (coin: CoinData) => {
+    const usd = coin.quote.USD;
+    setSelectedCoin({
+      slug: coinSlug(coin),
+      row: createCryptoDetailRow({
+        name: coin.name,
+        symbol: coin.symbol,
+        rank: coin.cmc_rank,
+        price: usd.price,
+        change_1h_pct: usd.percent_change_1h,
+        change_24h_pct: usd.percent_change_24h,
+        change_7d_pct: usd.percent_change_7d,
+        change_30d_pct: usd.percent_change_30d,
+        market_cap: usd.market_cap,
+        volume_24h: usd.volume_24h,
+      }),
+    });
   };
 
   if (isLoading) {
@@ -142,15 +162,15 @@ const TopDailyGainersTop500 = () => {
             {gainers.slice(0, 20).map((coin, index) => (
               <tr key={coin.id} className="group border-b border-white/[0.06] hover:bg-white/[0.025]" data-testid={`top500-gainer-card-${coin.symbol}`}>
                 <td className="px-3 py-2">
-                  <a href={coinUrl(coin)} target="_blank" rel="noopener noreferrer" className="flex min-w-[150px] items-center gap-2 hover:text-cyan-200">
+                  <button type="button" onClick={() => openCoin(coin)} className="flex min-w-[150px] items-center gap-2 text-left hover:text-cyan-200">
                     <span className="w-5 shrink-0 font-mono text-[9px] text-cyan-400/80">#{index + 1}</span>
                     <span className="min-w-0">
                       <span className="flex items-center gap-1 truncate text-[11px] font-semibold text-gray-100">
-                        {coin.name}<ExternalLink className="h-2.5 w-2.5 shrink-0 text-white/25 group-hover:text-cyan-300" />
+                        {coin.name}<ChartCandlestick className="h-2.5 w-2.5 shrink-0 text-white/25 group-hover:text-cyan-300" />
                       </span>
                       <span className="block font-mono text-[9px] uppercase tracking-wide text-gray-500">{coin.symbol} · CMC #{coin.cmc_rank}</span>
                     </span>
-                  </a>
+                  </button>
                 </td>
                 <td className="whitespace-nowrap px-2 py-2 text-right font-mono text-[10px] tabular-nums text-gray-300">{formatPrice(coin.quote.USD.price)}</td>
                 <td className="whitespace-nowrap px-2 py-2 text-right font-mono text-[10px] font-semibold tabular-nums text-emerald-400/90">{formatPercentChange(coin.quote.USD.percent_change_24h)}</td>
@@ -160,6 +180,9 @@ const TopDailyGainersTop500 = () => {
           </tbody>
         </table>
       </div>
+      {selectedCoin && (
+        <CryptoDetailModal row={selectedCoin.row} cmcSlug={selectedCoin.slug} onClose={() => setSelectedCoin(null)} />
+      )}
     </section>
   );
 };
