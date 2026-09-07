@@ -2,6 +2,10 @@ import { useState, useCallback, useMemo, useRef, Component } from 'react';
 import { useTheme, DARK_C } from '@/contexts/ThemeContext';
 import { useSetPageContext } from '@/hooks/useSetPageContext';
 import { useSetScreenContext } from '@/hooks/useSetScreenContext';
+import {
+  resolveCryptoTradingViewSymbol,
+  type CryptoTradingViewResolution,
+} from '@/utils/cryptoTradingViewSymbol';
 import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -490,8 +494,6 @@ function IdeaRow({ coin, side, setupType, score, confidence, thesisSummary, rank
 
 // ─── Hero: Rich Thesis Panel ──────────────────────────────────────────────────
 function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem | null; row: ScreenerRow | null }) {
-  const [chartIv, setChartIv] = useState<ChartInterval>('1h');
-
   if (!idea) {
     return (
       <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, padding:20, textAlign:'center' }}>
@@ -573,18 +575,7 @@ function RichThesisPanel({ idea, row }: { idea: BriefingIdea | AgentRankedItem |
 
         {/* Inline chart */}
         <div style={{ background:'#050c16', borderBottom:`1px solid ${C.border}` }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', padding:'3px 8px', gap:3 }}>
-            {(['15m','1h','4h','1d'] as ChartInterval[]).map(t => (
-              <button key={t} onClick={() => setChartIv(t)}
-                style={{ fontSize:7.5, padding:'1px 5px', borderRadius:2, cursor:'pointer', fontFamily:_hlFont,
-                  background: chartIv===t ? `${C.teal}22` : 'none',
-                  border: `1px solid ${chartIv===t ? C.teal : C.border}`,
-                  color: chartIv===t ? C.teal : C.dim }}>
-                {t}
-              </button>
-            ))}
-          </div>
-          <CoinChartPanel coin={coin} interval={chartIv} />
+          <CryptoTradingViewPanel coin={coin} height={220} />
         </div>
 
         {/* Key metrics grid */}
@@ -1185,8 +1176,45 @@ function CoinChartPanel({ coin, interval }: { coin: string; interval: ChartInter
   );
 }
 
+function buildCryptoTvEmbedUrl(symbol: string, height: number): string {
+  return (
+    'https://s.tradingview.com/embed-widget/advanced-chart/?locale=en' +
+    `&width=100%25&height=${height}&interval=1D&style=1&toolbar_bg=0d1623` +
+    '&enable_publishing=false&withdateranges=true&hide_side_toolbar=false' +
+    '&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark' +
+    '&timezone=exchange&hide_top_toolbar=false' +
+    '&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%2C%22use_localstorage_for_settings%22%5D' +
+    '&enabled_features=%5B%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D' +
+    `&symbol=${encodeURIComponent(symbol)}`
+  );
+}
+
+function CryptoTradingViewPanel({ coin, height = 440 }: { coin: string; height?: number }) {
+  const resolution = resolveCryptoTradingViewSymbol(coin);
+
+  if (resolution.status === 'unresolved') {
+    return (
+      <div style={{ height, padding:24, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, textAlign:'center', background:'#050c16' }}>
+        <ShieldAlert style={{ width:24, height:24, color:C.orange }} />
+        <span style={{ fontSize:10, fontWeight:800, color:C.orange, letterSpacing:1, textTransform:'uppercase' }}>No safe crypto chart resolved</span>
+        <span style={{ maxWidth:420, fontSize:8.5, lineHeight:1.55, color:C.dim }}>
+          {resolution.reason} The chart was blocked to avoid showing an unrelated stock, ETF, or other instrument.
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <iframe
+      key={resolution.symbol}
+      src={buildCryptoTvEmbedUrl(resolution.symbol, height)}
+      style={{ width:'100%', height, border:'none', display:'block' }}
+      title={`${coin} crypto chart`}
+    />
+  );
+}
+
 function ChartListModal({ title, coins: rawCoins, onClose }: { title: string; coins: string[]; onClose: () => void }) {
-  const [iv, setIv] = useState<ChartInterval>('1d');
   const coins = [...new Set(rawCoins)]; // deduplicate
   return (
     <div
@@ -1200,26 +1228,18 @@ function ChartListModal({ title, coins: rawCoins, onClose }: { title: string; co
           <BarChart2 style={{ width: 11, height: 11, color: C.teal }} />
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, color: C.teal, textTransform: 'uppercase' }}>{title}</span>
           <span style={{ fontSize: 8, color: C.dim }}>· {coins.length} assets</span>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-            {(['15m', '1h', '4h', '1d'] as ChartInterval[]).map(t => (
-              <button key={t} onClick={() => setIv(t)}
-                style={{ fontSize: 8, fontWeight: 700, padding: '2px 7px', borderRadius: 3, cursor: 'pointer', fontFamily: _hlFont,
-                  background: iv === t ? `${C.teal}22` : 'none',
-                  border: `1px solid ${iv === t ? C.teal : C.border}`,
-                  color: iv === t ? C.teal : C.dim }}>
-                {t}
-              </button>
-            ))}
-          </div>
           <button onClick={onClose}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.dim, padding: 2, marginLeft: 6, display: 'flex' }}>
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.dim, padding: 2, marginLeft: 'auto', display: 'flex' }}>
             <X style={{ width: 14, height: 14 }} />
           </button>
         </div>
         {/* Scrollable chart list */}
         <div style={{ overflowY: 'auto', flex: 1 }}>
           {coins.map(coin => (
-            <CoinChartPanel key={`${coin}-${iv}`} coin={coin} interval={iv} />
+            <div key={coin} style={{ borderBottom:`1px solid ${C.border}` }}>
+              <div style={{ padding:'5px 12px 2px', fontSize:10, fontWeight:700, color:C.text, fontFamily:_hlFont }}>{coin}</div>
+              <CryptoTradingViewPanel coin={coin} height={280} />
+            </div>
           ))}
         </div>
       </div>
@@ -1835,6 +1855,7 @@ interface MatrixAsset {
   display_name?: string;
   asset_type?: string;
   category_source?: string;
+  matrix_tab?: string;
   mark?: number | null;
   oracle?: number | null;
   mid?: number | null;
@@ -2160,26 +2181,54 @@ const MATRIX_STOCK_TV: Record<string, string> = {
 
 type MatrixChartResult =
   | { type: 'tradingview'; symbol: string; title: string }
-  | { type: 'hyperliquid'; coin: string;   title: string };
+  | { type: 'crypto-tradingview'; resolution: CryptoTradingViewResolution; title: string }
+  | { type: 'hyperliquid'; coin: string; title: string }
+  | { type: 'unavailable'; title: string; reason: string };
 
 function resolveMatrixChart(asset: MatrixAsset, activeTab: string): MatrixChartResult {
   const sym   = (asset.coin ?? '').toUpperCase();
   const title = asset.display_name ?? asset.coin ?? sym;
+  const sourceCategory = String(asset.category_source ?? '').toLowerCase();
+  const inferredTab =
+    activeTab !== 'all'
+      ? activeTab
+      : asset.matrix_tab ??
+        MATRIX_SYMBOL_OVERRIDES_FE[sym] ??
+        (sourceCategory.includes('pre-ipo') || sourceCategory.includes('preipo')
+          ? 'pre_ipo'
+          : sourceCategory.includes('commodit')
+            ? 'commodities'
+            : sourceCategory.includes('index')
+              ? 'indices'
+              : sourceCategory.includes('theme')
+                ? 'themes'
+                : sourceCategory.includes('stock') || sourceCategory.includes('equity') || sourceCategory.includes('etf')
+                  ? 'stocks_etfs'
+                  : 'crypto');
 
-  if (activeTab === 'commodities') {
+  if (inferredTab === 'commodities') {
     return { type:'tradingview', symbol: MATRIX_COMMODITY_TV[sym] ?? sym, title };
   }
-  if (activeTab === 'indices') {
+  if (inferredTab === 'indices') {
     return { type:'tradingview', symbol: MATRIX_INDEX_TV[sym] ?? sym, title };
   }
-  if (activeTab === 'themes') {
+  if (inferredTab === 'themes') {
     return { type:'tradingview', symbol: MATRIX_THEME_TV[sym] ?? sym, title };
   }
-  if (activeTab === 'stocks_etfs') {
+  if (inferredTab === 'stocks_etfs') {
     return { type:'tradingview', symbol: MATRIX_STOCK_TV[sym] ?? sym, title };
   }
-  // crypto + pre_ipo → Hyperliquid native candles
-  return { type:'hyperliquid', coin: asset.coin ?? sym, title };
+  if (inferredTab === 'crypto') {
+    return { type:'crypto-tradingview', resolution:resolveCryptoTradingViewSymbol(asset.coin ?? ''), title };
+  }
+  if (inferredTab === 'pre_ipo') {
+    return { type:'hyperliquid', coin: asset.coin ?? sym, title };
+  }
+  return {
+    type:'unavailable',
+    title,
+    reason:'No safe chart source is configured for this asset category.',
+  };
 }
 
 function buildTvEmbedUrl(symbol: string): string {
@@ -2225,8 +2274,14 @@ function MatrixChartModal({ asset, activeTab, onClose }: {
               ))}
             </div>
           )}
-          {resolved.type === 'tradingview' && (
-            <span style={{ fontSize:8, color:C.dim, fontFamily:_hlFont, marginLeft:4 }}>{resolved.symbol}</span>
+          {(resolved.type === 'tradingview' || resolved.type === 'crypto-tradingview') && (
+            <span style={{ fontSize:8, color:C.dim, fontFamily:_hlFont, marginLeft:4 }}>
+              {resolved.type === 'tradingview'
+                ? resolved.symbol
+                : resolved.resolution.status === 'resolved'
+                  ? resolved.resolution.symbol
+                  : 'Safe chart unavailable'}
+            </span>
           )}
           <button onClick={onClose}
             style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:C.dim, padding:2, display:'flex' }}>
@@ -2243,11 +2298,21 @@ function MatrixChartModal({ asset, activeTab, onClose }: {
               title={`${resolved.title} chart`}
             />
           )}
-          {resolved.type === 'hyperliquid' && (
+          {(resolved.type === 'hyperliquid' || resolved.type === 'crypto-tradingview' || resolved.type === 'unavailable') && (
             <div style={{ overflowY:'auto', maxHeight:'80vh' }}>
-              <div style={{ paddingTop:6 }}>
+              {resolved.type === 'hyperliquid' && <div style={{ paddingTop:6 }}>
                 <CoinChartPanel coin={resolved.coin} interval={iv} />
-              </div>
+              </div>}
+              {resolved.type === 'crypto-tradingview' && (
+                <CryptoTradingViewPanel coin={asset.coin ?? ''} height={480} />
+              )}
+              {resolved.type === 'unavailable' && (
+                <div style={{ height:220, padding:24, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, textAlign:'center', background:'#050c16' }}>
+                  <ShieldAlert style={{ width:24, height:24, color:C.orange }} />
+                  <span style={{ fontSize:10, fontWeight:800, color:C.orange, letterSpacing:1, textTransform:'uppercase' }}>Chart unavailable</span>
+                  <span style={{ maxWidth:420, fontSize:8.5, lineHeight:1.55, color:C.dim }}>{resolved.reason}</span>
+                </div>
+              )}
               {/* ── Market data grid ── */}
               <div style={{ padding:'10px 16px 6px' }}>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'6px 14px' }}>
@@ -2339,7 +2404,9 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
 
   const currentKey = activeTab === 'all' ? (orderedKeys[0] ?? 'stocks_etfs') : ((activeTab in tabs) ? activeTab : (orderedKeys[0] ?? 'stocks_etfs'));
   const assets: MatrixAsset[] = activeTab === 'all'
-    ? Object.values(tabs).flatMap(t => t?.assets ?? [])
+    ? Object.entries(tabs).flatMap(([tab, value]) =>
+        (value?.assets ?? []).map(asset => ({ ...asset, matrix_tab: tab }))
+      )
     : (tabs[currentKey]?.assets ?? []);
 
   const filteredTabbed = useMemo(() => {
@@ -2522,7 +2589,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
                       {sortedTabbed.map((row, idx) => {
                         const rowBg = idx % 2 === 0 ? C.bg : C.card2;
                         return (
-                          <tr key={`${row.coin ?? idx}_${idx}`} onClick={() => setMatrixChart({ asset: row, tab: currentKey })} style={{ background:rowBg, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
+                          <tr key={`${row.coin ?? idx}_${idx}`} onClick={() => setMatrixChart({ asset: row, tab: row.matrix_tab ?? currentKey })} style={{ background:rowBg, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
                             {MATRIX_COLS.map(col => (
                               <td key={col.key} style={{ padding:'2px 7px', height:22, textAlign:col.align??'right', fontFamily:_hlFont, fontSize:9, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}`, verticalAlign:'middle' }}>
                                 {col.render(row)}
@@ -2568,7 +2635,7 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
                       {sortedFallback.map((row, idx) => {
                         const rowBg = idx % 2 === 0 ? C.bg : C.card2;
                         return (
-                          <tr key={`${row.coin}_${idx}`} onClick={() => setMatrixChart({ asset: { coin: row.coin, display_name: row.displayName, mark: row.markPrice, oracle: row.oraclePrice, change_24h_pct: row.change24hPct, funding: row.funding, open_interest_usd: row.openInterest, volume_24h_usd: row.volume24h, premium_pct: row.premium != null ? row.premium * 100 : null, mark_oracle_pct: row.distMarkOracle != null ? row.distMarkOracle * 100 : null, book_imbalance: row.bidAskImbalance, trade_imbalance: row.tradeImbalance } as MatrixAsset, tab: activeTab })} style={{ background:rowBg, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
+                          <tr key={`${row.coin}_${idx}`} onClick={() => setMatrixChart({ asset: { coin: row.coin, display_name: row.displayName, mark: row.markPrice, oracle: row.oraclePrice, change_24h_pct: row.change24hPct, funding: row.funding, open_interest_usd: row.openInterest, volume_24h_usd: row.volume24h, premium_pct: row.premium != null ? row.premium * 100 : null, mark_oracle_pct: row.distMarkOracle != null ? row.distMarkOracle * 100 : null, book_imbalance: row.bidAskImbalance, trade_imbalance: row.tradeImbalance } as MatrixAsset, tab: activeTab === 'all' ? classifyScreenerRow(row) : activeTab })} style={{ background:rowBg, transition:'background 0.15s', borderBottom:`1px solid ${C.dimLow}`, cursor:'pointer' }}>
                             {MATRIX_COLS.map(col => (
                               <td key={String(col.key)} style={{ padding:'2px 7px', height:22, textAlign:col.align??'right', fontFamily:_hlFont, fontSize:9, whiteSpace:'nowrap', position:col.key==='coin'?'sticky':'static', left:col.key==='coin'?0:'auto', background:col.key==='coin'?rowBg:'transparent', zIndex:col.key==='coin'?2:'auto', borderRight:`1px solid ${C.dimLow}`, verticalAlign:'middle' }}>
                                 {col.render(row)}
