@@ -9,6 +9,7 @@
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "test:crypto-tv": "tsx --test client/src/utils/cryptoTradingViewSymbol.test.ts",
+    "test:hyperliquid-matrix": "tsx --test server/hyperliquid-matrix.test.ts",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {

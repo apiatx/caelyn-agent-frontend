@@ -19,6 +19,7 @@ import { z } from "zod";
 import { insertPremiumAccessSchema } from "@shared/schema";
 import fs from 'fs';
 import path from 'path';
+import { normalizeHyperliquidMatrixTabs } from './hyperliquid-matrix';
 
 const HOLDINGS_FILE      = path.join(process.cwd(), 'data', 'stock-holdings.json');
 const TRADE_HISTORY_FILE = path.join(process.cwd(), 'data', 'stock-holdings-history.json');
@@ -4391,8 +4392,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return {
       coin:                row?.coin ?? row?.displayName ?? null,
       display_name:        row?.displayName ?? row?.coin ?? null,
+      canonical_coin_id:   row?.canonicalCoinId ?? null,
       asset_type:          row?.marketType ?? null,
+      market_type:         row?.marketType ?? null,
       category_source:     row?.category ?? null,
+      tags:                row?.tags ?? [],
       mark:                row?.markPrice ?? null,
       oracle:              row?.oraclePrice ?? null,
       mid:                 row?.midPrice ?? null,
@@ -4424,20 +4428,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       indices:     { label: MATRIX_TAB_LABELS.indices,     count: 0, assets: [] },
       pre_ipo:     { label: MATRIX_TAB_LABELS.pre_ipo,     count: 0, assets: [] },
     };
-    // De-dup by coin within the snapshot: the backend occasionally emits the
-    // same coin twice with different category tags. Keep the row with the
-    // highest 24h volume so the table picks the canonical/most-liquid quote.
-    const bestByCoin = new Map<string, any>();
+    const uniqueSymbols = new Set<string>();
     for (const row of rows) {
       const sym = String(row?.coin ?? row?.displayName ?? '').toUpperCase();
       if (!sym) continue;
-      const prev = bestByCoin.get(sym);
-      if (!prev) { bestByCoin.set(sym, row); continue; }
-      const va = Number(row?.volume24h ?? 0);
-      const vb = Number(prev?.volume24h ?? 0);
-      if (va > vb) bestByCoin.set(sym, row);
-    }
-    for (const row of bestByCoin.values()) {
+      uniqueSymbols.add(sym);
       const key = _classifyMatrixTab(row);
       const tab = tabs[key] ?? tabs.crypto;
       tab.assets.push(_shapeMatrixAsset(row));
@@ -4447,7 +4442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updated_at: snapshot?.meta?.updatedAt ?? new Date().toISOString(),
       source: 'derived-from-snapshot',
       tabs,
-      all_assets_count: bestByCoin.size,
+      all_assets_count: uniqueSymbols.size,
     };
   }
 
@@ -4461,7 +4456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (r.ok) {
         const json = await r.json();
         if (json && json.tabs && Object.keys(json.tabs).length > 0) {
-          return res.json(json);
+          return res.json(normalizeHyperliquidMatrixTabs(json));
         }
       }
     } catch { /* fall through to snapshot derivation */ }
@@ -4471,7 +4466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let snapshot: any = _hlCache['all:200']?.data;
       if (!snapshot) snapshot = await _fetchScreener('all', '200');
       const payload = _buildMatrixFromSnapshot(snapshot);
-      res.json(payload);
+      res.json(normalizeHyperliquidMatrixTabs(payload));
     } catch (e: any) {
       res.status(500).json({ error: 'Failed to build market matrix' });
     }
