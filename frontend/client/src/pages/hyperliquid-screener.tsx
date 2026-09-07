@@ -920,15 +920,20 @@ type CK = keyof ScreenerRow;
 // ─── TSMOM Types ──────────────────────────────────────────────────────────────
 interface TsmomSignal {
   coin:           string;
+  canonical_coin_id?: string;
+  display_symbol?: string;
+  market?:        'crypto' | 'stocks';
   s_raw:          number;
   s_adj:          number;
   sigma:          number;    // annualized vol %
-  funding_bps:    number;    // bps/hr
-  funding_ann_pct: number;
+  funding_bps:    number | null;    // bps/hr
+  funding_ann_pct: number | null;
   w_scaled:       number;    // target weight %
   side:           'long' | 'short' | 'flat';
   momentum_10d:   number | null;
   momentum_30d:   number | null;
+  momentum_by_lookback?: Record<string, number | null>;
+  lookbacks_available?: number[];
   bars_used:      number;
 }
 interface TsmomMeta {
@@ -937,6 +942,8 @@ interface TsmomMeta {
   short_count:   number;
   flat_count:    number;
   generated_at:  string;
+  market?:       'crypto' | 'stocks';
+  lookbacks?:    number[];
 }
 interface TsmomResult {
   signals: TsmomSignal[];
@@ -1591,7 +1598,8 @@ function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
 }
 
 // ─── Momentum Panel (TSMOM) ───────────────────────────────────────────────────
-type TsmomSK = 'default' | 'coin' | 's_adj' | 'side' | 'sigma' | 'momentum_10d' | 'momentum_30d' | 'funding_bps' | 'w_scaled';
+type TsmomMarket = 'crypto' | 'stocks';
+type TsmomSK = 'default' | 'coin' | 's_adj' | 'side' | 'sigma' | 'lookback_1' | 'lookback_2' | 'lookback_3' | 'funding_bps' | 'w_scaled';
 
 function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
   selectedCoin: string | null;
@@ -1600,13 +1608,14 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
 }) {
   const [open,    setOpen]    = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const [market,  setMarket]  = useState<TsmomMarket>('crypto');
   const [sortKey, setSortKey] = useState<TsmomSK>('default');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const { data: rawTsmom, isLoading, isError } = useQuery<TsmomResult>({
-    queryKey: ['tsmom-signals'],
+    queryKey: ['tsmom-signals', market],
     queryFn: async () => {
-      const r = await fetch('/api/hyperliquid/tsmom-signals?top_n=60');
+      const r = await fetch(`/api/hyperliquid/tsmom-signals?top_n=60&market=${market}`);
       if (!r.ok) throw new Error(`TSMOM ${r.status}`);
       return r.json();
     },
@@ -1619,29 +1628,42 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
     retry: 3,
     retryDelay: (attempt) => Math.min(3000 * (attempt + 1), 15000),
     refetchOnWindowFocus: false,
-    placeholderData: (prev: any) => prev,
   });
 
   // ── Persistent last-good cache ─────────────────────────────────────────────
-  const _lastGoodTsmom = useRef<TsmomResult | null>(null);
-  if (_lastGoodTsmom.current === null) {
-    try { const c = localStorage.getItem('hl_tsmom_cache'); if (c) _lastGoodTsmom.current = JSON.parse(c); } catch {}
+  const _lastGoodTsmom = useRef<Partial<Record<TsmomMarket, TsmomResult>>>({});
+  if (!_lastGoodTsmom.current[market]) {
+    try {
+      const c = localStorage.getItem(`hl_tsmom_cache_${market}`);
+      if (c) _lastGoodTsmom.current[market] = JSON.parse(c);
+    } catch {}
   }
   if ((rawTsmom?.signals?.length ?? 0) > 0) {
-    _lastGoodTsmom.current = rawTsmom!;
-    try { localStorage.setItem('hl_tsmom_cache', JSON.stringify(rawTsmom)); } catch {}
+    _lastGoodTsmom.current[market] = rawTsmom!;
+    try { localStorage.setItem(`hl_tsmom_cache_${market}`, JSON.stringify(rawTsmom)); } catch {}
   }
-  const data = (rawTsmom?.signals?.length ?? 0) > 0 ? rawTsmom : (_lastGoodTsmom.current ?? rawTsmom);
+  const data = (rawTsmom?.signals?.length ?? 0) > 0 ? rawTsmom : (_lastGoodTsmom.current[market] ?? rawTsmom);
 
   const signals = data?.signals ?? [];
   const meta    = data?.meta;
+  const lookbacks = meta?.lookbacks?.length === 3
+    ? meta.lookbacks
+    : market === 'stocks' ? [5, 15, 30] : [10, 30, 90];
+  const momentumFor = (sig: TsmomSignal, window: number) => {
+    const mapped = sig.momentum_by_lookback?.[String(window)];
+    if (mapped !== undefined) return mapped;
+    if (window === 10) return sig.momentum_10d;
+    if (window === 30) return sig.momentum_30d;
+    return null;
+  };
 
   // Sort the signals according to active column
   const sorted: TsmomSignal[] = useMemo(() => {
     if (sortKey === 'default') return signals;
     return [...signals].sort((a, b) => {
-      let av: any = a[sortKey as keyof TsmomSignal];
-      let bv: any = b[sortKey as keyof TsmomSignal];
+      const lookbackIndex = sortKey.startsWith('lookback_') ? Number(sortKey.slice(-1)) - 1 : -1;
+      let av: any = lookbackIndex >= 0 ? momentumFor(a, lookbacks[lookbackIndex]) : a[sortKey as keyof TsmomSignal];
+      let bv: any = lookbackIndex >= 0 ? momentumFor(b, lookbacks[lookbackIndex]) : b[sortKey as keyof TsmomSignal];
       // String sort for coin / side
       if (typeof av === 'string' && typeof bv === 'string') {
         const d = av.localeCompare(bv);
@@ -1654,7 +1676,7 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
       const d = av - bv;
       return sortDir === 'asc' ? d : -d;
     });
-  }, [signals, sortKey, sortDir]);
+  }, [signals, sortKey, sortDir, lookbacks]);
 
   const display = showAll ? sorted : sorted.slice(0, 20);
 
@@ -1672,17 +1694,18 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
   const sigBar = (s: number) => ((s + 2) / 4) * 100;
 
   // Grid layout — signal bar takes all available space via 1fr
-  const GRID = '24px 72px 1fr 80px 60px 60px 60px 60px 60px';
+  const GRID = '24px 72px 1fr 80px 60px 60px 60px 60px 60px 60px';
 
   // Column definitions: label, sortKey, alignment
   const COLS: { label: string; key: TsmomSK; align: 'left' | 'center' | 'right' }[] = [
     { label: '#',     key: 'default',      align: 'left'   },
-    { label: 'COIN',  key: 'coin',         align: 'left'   },
+    { label: market === 'stocks' ? 'ASSET' : 'COIN', key: 'coin', align: 'left' },
     { label: 'SIGNAL',key: 's_adj',        align: 'center' },
     { label: 'SIDE',  key: 'side',         align: 'center' },
     { label: 'VOL%',  key: 'sigma',        align: 'right'  },
-    { label: '10D%',  key: 'momentum_10d', align: 'right'  },
-    { label: '30D%',  key: 'momentum_30d', align: 'right'  },
+    { label: `${lookbacks[0]}D%`, key: 'lookback_1', align: 'right' },
+    { label: `${lookbacks[1]}D%`, key: 'lookback_2', align: 'right' },
+    { label: `${lookbacks[2]}D%`, key: 'lookback_3', align: 'right' },
     { label: 'FUND',  key: 'funding_bps',  align: 'right'  },
     { label: 'W%',    key: 'w_scaled',     align: 'right'  },
   ];
@@ -1700,7 +1723,9 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, color: C.purple, textTransform: 'uppercase' }}>
             Time-Series Momentum
           </span>
-          <span style={{ fontSize: 8, color: C.dim, marginLeft: 2 }}>TSMOM · Multi-Lookback z-Score</span>
+          <span style={{ fontSize: 8, color: C.dim, marginLeft: 2 }}>
+            TSMOM · Multi-Lookback z-Score · {lookbacks.map(w => `${w}d`).join(' / ')}
+          </span>
           {meta && (
             <span style={{ fontSize: 8, color: C.dim, marginLeft: 6 }}>
               <span style={{ color: C.green }}>{meta.long_count}↑</span>
@@ -1717,6 +1742,23 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
           <span style={{ marginLeft: 'auto', color: C.dim }}>
             {open ? <ChevronUp style={{ width: 11, height: 11 }} /> : <ChevronDown style={{ width: 11, height: 11 }} />}
           </span>
+        </div>
+        <div role="group" aria-label="TSMOM market" style={{ display: 'flex', padding: 2, marginRight: 8,
+          border: `1px solid ${C.border}`, borderRadius: 4, background: C.bg }}>
+          {(['crypto', 'stocks'] as const).map(option => (
+            <button key={option} onClick={() => {
+              setMarket(option);
+              setShowAll(false);
+              setSortKey('default');
+              setSortDir('desc');
+            }} aria-pressed={market === option}
+              style={{ border: 0, borderRadius: 2, padding: '2px 7px', cursor: 'pointer',
+                fontSize: 7.5, fontWeight: 700, fontFamily: _hlFont, textTransform: 'uppercase',
+                color: market === option ? C.bg : C.dim,
+                background: market === option ? C.purple : 'transparent' }}>
+              {option === 'crypto' ? 'Crypto' : 'Stocks'}
+            </button>
+          ))}
         </div>
         {signals.length > 0 && (
           <div style={{ paddingRight: 10 }}>
@@ -1751,17 +1793,20 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
             <div style={{ padding: '16px', textAlign: 'center', fontSize: 9, color: C.dim }}>
               {isError
                 ? 'Error loading TSMOM signals — retrying in 8s…'
-                : 'Computing momentum signals — 1d candle data loading in background. Auto-refreshes every 60s.'}
+                : `No eligible ${market === 'stocks' ? 'Stock' : 'Crypto'} TSMOM signals`}
             </div>
           )}
 
           {/* Signal rows */}
           {display.map((sig, i) => {
-            const isSel  = selectedCoin === sig.coin;
+            const canonicalId = sig.canonical_coin_id ?? sig.coin;
+            const displaySymbol = sig.display_symbol ?? sig.coin.split(':').pop() ?? sig.coin;
+            const venue = market === 'stocks' && canonicalId.includes(':') ? canonicalId.split(':')[0] : null;
+            const isSel  = selectedCoin === canonicalId;
             const sColor = sig.s_adj > 0.15 ? C.green : sig.s_adj < -0.15 ? C.red : C.dim;
             const barPct = sigBar(sig.s_adj);
             return (
-              <div key={`${sig.coin}_${i}`} onClick={() => onSelect(sig.coin)}
+              <div key={canonicalId} onClick={() => onSelect(canonicalId)}
                 style={{ display: 'grid', gridTemplateColumns: GRID,
                   padding: '3px 12px',
                   background: isSel ? `${C.purple}18` : i % 2 === 0 ? C.bg : C.card2,
@@ -1772,7 +1817,12 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
                 {/* Rank */}
                 <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: _hlFont }}>{i + 1}</span>
                 {/* Coin */}
-                <span style={{ fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text, fontFamily: _hlFont }}>{sig.coin}</span>
+                <span style={{ minWidth: 0, fontFamily: _hlFont, lineHeight: 1 }}>
+                  <span style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text,
+                    overflow: 'hidden', textOverflow: 'ellipsis' }}>{displaySymbol}</span>
+                  {venue && <span title={canonicalId} style={{ display: 'block', marginTop: 2, fontSize: 6.5,
+                    color: C.dimLow, textTransform: 'uppercase' }}>{venue}</span>}
+                </span>
                 {/* Signal bar — fills 1fr */}
                 <div style={{ position: 'relative', height: 12, background: C.dimLow, borderRadius: 2, overflow: 'hidden', marginRight: 8 }}>
                   <div style={{ position: 'absolute', left: '50%', top: 0, width: 1, height: '100%', background: C.border, zIndex: 1 }} />
@@ -1798,20 +1848,17 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
                 <span style={{ fontSize: 8.5, color: C.amber, fontFamily: _hlFont, textAlign: 'right', paddingRight: 8 }}>
                   {sig.sigma.toFixed(0)}%
                 </span>
-                {/* 10D% */}
-                <span style={{ fontSize: 8.5, color: sig.momentum_10d == null ? C.dim : sig.momentum_10d >= 0 ? C.green : C.red,
-                  fontFamily: _hlFont, textAlign: 'right', paddingRight: 8 }}>
-                  {sig.momentum_10d == null ? '—' : `${sig.momentum_10d >= 0 ? '+' : ''}${sig.momentum_10d.toFixed(1)}%`}
-                </span>
-                {/* 30D% */}
-                <span style={{ fontSize: 8.5, color: sig.momentum_30d == null ? C.dim : sig.momentum_30d >= 0 ? C.green : C.red,
-                  fontFamily: _hlFont, textAlign: 'right', paddingRight: 8 }}>
-                  {sig.momentum_30d == null ? '—' : `${sig.momentum_30d >= 0 ? '+' : ''}${sig.momentum_30d.toFixed(1)}%`}
-                </span>
+                {lookbacks.map(window => {
+                  const momentum = momentumFor(sig, window);
+                  return <span key={window} style={{ fontSize: 8.5, color: momentum == null ? C.dim : momentum >= 0 ? C.green : C.red,
+                    fontFamily: _hlFont, textAlign: 'right', paddingRight: 8 }}>
+                    {momentum == null ? '—' : `${momentum >= 0 ? '+' : ''}${momentum.toFixed(1)}%`}
+                  </span>;
+                })}
                 {/* FUND */}
-                <span style={{ fontSize: 8.5, color: sig.funding_bps > 1 ? C.red : sig.funding_bps < -1 ? C.blue : C.dim,
+                <span style={{ fontSize: 8.5, color: sig.funding_bps != null && sig.funding_bps > 1 ? C.red : sig.funding_bps != null && sig.funding_bps < -1 ? C.blue : C.dim,
                   fontFamily: _hlFont, textAlign: 'right', paddingRight: 8 }}>
-                  {sig.funding_bps >= 0 ? '+' : ''}{sig.funding_bps.toFixed(2)}
+                  {sig.funding_bps == null ? '—' : `${sig.funding_bps >= 0 ? '+' : ''}${sig.funding_bps.toFixed(2)}`}
                 </span>
                 {/* W% */}
                 <span style={{ fontSize: 8.5, fontWeight: 700, color: sColor,
@@ -1834,7 +1881,7 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
                 </button>
               )}
               <span style={{ fontSize: 7.5, color: C.dim }}>
-                Signal = avg z-score (10d/30d/90d) adjusted for funding carry · Vol-targeted weight at 40% target
+                Signal = avg z-score ({lookbacks.map(w => `${w}d`).join('/')}) adjusted for funding carry · Vol-targeted weight at 40% target
               </span>
               {meta && (
                 <span style={{ fontSize: 7.5, color: C.dimLow, marginLeft: 'auto' }}>

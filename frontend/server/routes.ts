@@ -4231,7 +4231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Persistent caches for computed signal endpoints — served stale when FastAPI is down/empty
   let _signalsCache: any = null;
-  let _tsmomCache: any = null;
+  const _tsmomCache: Record<'crypto' | 'stocks', any> = { crypto: null, stocks: null };
 
   async function _fetchScreener(market_type: string, limit: string): Promise<any> {
     const r = await fetch(
@@ -4273,10 +4273,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
     const warmTsmom = async () => {
       try {
-        const r = await fetch(`${HL_URL}/api/hyperliquid/screener/tsmom-signals?top_n=60`, { headers: hlHdr(), signal: AbortSignal.timeout(12_000) });
+        const r = await fetch(`${HL_URL}/api/hyperliquid/screener/tsmom-signals?top_n=60&market=crypto`, { headers: hlHdr(), signal: AbortSignal.timeout(12_000) });
         if (!r.ok) return false;
         const json = await r.json();
-        if ((json?.signals?.length ?? 0) > 0) { _tsmomCache = json; return true; }
+        if ((json?.signals?.length ?? 0) > 0) { _tsmomCache.crypto = json; return true; }
         return false;
       } catch { return false; }
     };
@@ -4487,22 +4487,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/hyperliquid/tsmom-signals', async (req, res) => {
     try {
-      const { top_n = 60 } = req.query;
+      const { top_n = 60, market = 'crypto' } = req.query;
+      if (market !== 'crypto' && market !== 'stocks') {
+        return res.status(400).json({ error: 'market must be crypto or stocks' });
+      }
       const r = await fetch(
-        `${HL_URL}/api/hyperliquid/screener/tsmom-signals?top_n=${top_n}`,
+        `${HL_URL}/api/hyperliquid/screener/tsmom-signals?top_n=${top_n}&market=${market}`,
         { headers: hlHdr(), signal: AbortSignal.timeout(12_000) }
       );
       if (!r.ok) {
-        if (_tsmomCache) { res.setHeader('X-Cache','STALE'); return res.json(_tsmomCache); }
+        if (_tsmomCache[market]) { res.setHeader('X-Cache','STALE'); return res.json(_tsmomCache[market]); }
         return res.status(r.status).json({ error: `Backend ${r.status}` });
       }
       const json = await r.json();
       const hasContent = (json?.signals?.length ?? 0) > 0;
-      if (hasContent) _tsmomCache = json;
-      if (!hasContent && _tsmomCache) { res.setHeader('X-Cache','STALE'); return res.json(_tsmomCache); }
+      if (hasContent) _tsmomCache[market] = json;
+      if (!hasContent && _tsmomCache[market]) { res.setHeader('X-Cache','STALE'); return res.json(_tsmomCache[market]); }
       res.json(json);
     } catch (e: any) {
-      if (_tsmomCache) { res.setHeader('X-Cache','STALE'); return res.json(_tsmomCache); }
+      const market = req.query.market === 'stocks' ? 'stocks' : 'crypto';
+      if (_tsmomCache[market]) { res.setHeader('X-Cache','STALE'); return res.json(_tsmomCache[market]); }
       res.status(500).json({ error: 'Failed to fetch TSMOM signals' });
     }
   });
