@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { resolveCryptoTradingViewSymbol } from '@/utils/cryptoTradingViewSymbol';
 
 type NullableNumber = number | null;
 
@@ -65,13 +66,6 @@ export function createCryptoDetailRow(
   };
 }
 
-const COMMON_BINANCE_SYMBOLS = new Set([
-  'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'AVAX', 'DOT', 'MATIC', 'LINK',
-  'DOGE', 'SHIB', 'UNI', 'AAVE', 'LTC', 'NEAR', 'ATOM', 'APT', 'SUI', 'ARB',
-  'OP', 'INJ', 'TIA', 'PEPE', 'RENDER', 'FET', 'TAO', 'ONDO', 'RUNE', 'XLM',
-  'TRX', 'TON', 'HBAR', 'FIL', 'ICP',
-]);
-
 const INTERVALS = [
   { label: '1H', value: '60' },
   { label: '4H', value: '240' },
@@ -125,21 +119,22 @@ function Metric({ label, value, className = 'text-gray-100' }: {
   );
 }
 
-function tradingViewSymbol(symbol: string) {
-  const normalized = symbol.trim().toUpperCase();
-  return COMMON_BINANCE_SYMBOLS.has(normalized) ? `BINANCE:${normalized}USDT` : normalized;
-}
-
 export default function CryptoDetailModal({ row, cmcSlug, onClose }: CryptoDetailModalProps) {
   const [interval, setInterval] = useState('1D');
-  const tvSymbol = tradingViewSymbol(row.symbol);
+  const tvResolution = resolveCryptoTradingViewSymbol(row.symbol);
+  const tvSymbol = tvResolution.symbol;
+  const unresolvedReason = tvResolution.status === 'unresolved'
+    ? tvResolution.reason
+    : 'No safe TradingView crypto pair could be resolved.';
   const coinGeckoUrl = row.coingecko_id
     ? `https://www.coingecko.com/en/coins/${row.coingecko_id}`
     : `https://www.coingecko.com/en/search?query=${encodeURIComponent(row.symbol)}`;
   const hasStack = present(row.pct_vs_sma_50)
     && present(row.pct_vs_sma_150)
     && present(row.pct_vs_sma_200);
-  const chartUrl = `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=440&interval=${interval}&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%2C%22use_localstorage_for_settings%22%5D&enabled_features=%5B%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvSymbol)}`;
+  const chartUrl = tvSymbol
+    ? `https://s.tradingview.com/embed-widget/advanced-chart/?locale=en&width=100%25&height=440&interval=${interval}&style=1&toolbar_bg=0d1623&enable_publishing=false&withdateranges=true&hide_side_toolbar=false&allow_symbol_change=true&calendar=false&studies=%5B%5D&theme=dark&timezone=exchange&hide_top_toolbar=false&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%2C%22use_localstorage_for_settings%22%5D&enabled_features=%5B%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D&symbol=${encodeURIComponent(tvSymbol)}`
+    : null;
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -206,14 +201,37 @@ export default function CryptoDetailModal({ row, cmcSlug, onClose }: CryptoDetai
               </button>
             ))}
           </div>
-          <div className="overflow-hidden rounded-lg border border-white/10 bg-black">
-            <iframe
-              key={`${tvSymbol}-${interval}`}
-              src={chartUrl}
-              title={`${row.symbol} TradingView chart`}
-              className="block h-[360px] w-full border-0 sm:h-[440px]"
-            />
-          </div>
+          {chartUrl && tvSymbol ? (
+            <>
+              <div className="overflow-hidden rounded-lg border border-white/10 bg-black">
+                <iframe
+                  key={`${tvSymbol}-${interval}`}
+                  src={chartUrl}
+                  title={`${row.symbol} TradingView crypto chart`}
+                  className="block h-[360px] w-full border-0 sm:h-[440px]"
+                />
+              </div>
+              {tvResolution.strategy === 'crypto-search' && (
+                <p className="mt-2 font-mono text-[9px] text-gray-500">
+                  Crypto-only TradingView search: {tvSymbol}
+                </p>
+              )}
+            </>
+          ) : (
+            <div
+              className="flex h-[240px] items-center justify-center rounded-lg border border-amber-400/20 bg-amber-400/[0.035] px-6 text-center sm:h-[300px]"
+              role="status"
+            >
+              <div>
+                <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-amber-300">
+                  No safe crypto chart resolved
+                </div>
+                <p className="mt-2 max-w-md text-xs leading-5 text-gray-400">
+                  {unresolvedReason} TradingView was not opened to avoid showing an unrelated instrument.
+                </p>
+              </div>
+            </div>
+          )}
 
           <section className="mt-5">
             <h3 className="mb-2 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-gray-500">Quote / Market</h3>
