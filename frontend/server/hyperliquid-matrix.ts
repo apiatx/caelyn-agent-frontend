@@ -94,14 +94,14 @@ const preferCandidate = (left: Candidate, right: Candidate): Candidate => {
 export function normalizeHyperliquidMatrixTabs(payload: MatrixPayload): MatrixPayload {
   if (!payload?.tabs || Object.keys(payload.tabs).length === 0) return payload;
 
-  const candidatesBySymbol = new Map<string, Candidate[]>();
+  const candidatesByCanonicalId = new Map<string, Candidate[]>();
   const passthrough: Candidate[] = [];
   let moved = 0;
   let deduplicated = 0;
 
   for (const [upstreamTab, tab] of Object.entries(payload.tabs)) {
     for (const asset of tab?.assets ?? []) {
-      const symbol = symbolOf(asset);
+      const canonicalId = canonicalIdOf(asset);
       const normalizedTab = normalizedTabFor(asset, upstreamTab);
       if (normalizedTab !== upstreamTab) moved += 1;
 
@@ -111,13 +111,13 @@ export function normalizeHyperliquidMatrixTabs(payload: MatrixPayload): MatrixPa
         normalizedTab,
         score: evidenceScore(asset, upstreamTab, normalizedTab),
       };
-      if (!symbol) {
+      if (!canonicalId) {
         passthrough.push(candidate);
         continue;
       }
-      const candidates = candidatesBySymbol.get(symbol) ?? [];
+      const candidates = candidatesByCanonicalId.get(canonicalId) ?? [];
       candidates.push(candidate);
-      candidatesBySymbol.set(symbol, candidates);
+      candidatesByCanonicalId.set(canonicalId, candidates);
     }
   }
 
@@ -138,13 +138,7 @@ export function normalizeHyperliquidMatrixTabs(payload: MatrixPayload): MatrixPa
   };
 
   passthrough.forEach(addCandidate);
-  candidatesBySymbol.forEach((candidates) => {
-    const upstreamTabs = new Set(candidates.map(candidate => candidate.upstreamTab));
-    if (upstreamTabs.size <= 1) {
-      candidates.forEach(addCandidate);
-      return;
-    }
-
+  candidatesByCanonicalId.forEach((candidates) => {
     const preferred = candidates.reduce(preferCandidate);
     addCandidate(preferred);
     deduplicated += candidates.length - 1;
@@ -155,9 +149,12 @@ export function normalizeHyperliquidMatrixTabs(payload: MatrixPayload): MatrixPa
   const warnings = [...(payload.warnings ?? [])];
   if (moved > 0 || deduplicated > 0) {
     warnings.push(
-      `App-server tab normalization moved ${moved} row(s) and removed ${deduplicated} conflicting displayed-symbol duplicate(s).`,
+      `App-server tab normalization moved ${moved} row(s) and removed ${deduplicated} duplicate canonical market row(s).`,
     );
   }
 
-  return { ...payload, tabs, warnings };
+  const allAssetsCount = Object.values(tabs)
+    .reduce((count, tab) => count + (tab.assets?.length ?? 0), 0);
+
+  return { ...payload, tabs, all_assets_count: allAssetsCount, warnings };
 }

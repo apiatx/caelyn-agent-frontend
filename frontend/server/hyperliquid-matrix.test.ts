@@ -37,7 +37,7 @@ test('moves known equity markets out of Crypto without changing row metrics', ()
   assert.equal(result.tabs?.crypto.count, 0);
 });
 
-test('deduplicates conflicting tabs by classification evidence, then canonical identity', () => {
+test('deduplicates a true canonical duplicate by classification evidence', () => {
   const equity = {
     coin: 'AVGO',
     canonical_coin_id: 'xyz:AVGO',
@@ -47,7 +47,7 @@ test('deduplicates conflicting tabs by classification evidence, then canonical i
   };
   const wronglyAnnotated = {
     coin: 'AVGO',
-    canonical_coin_id: 'para:AVGO',
+    canonical_coin_id: 'xyz:AVGO',
     tags: ['perp', 'crypto'],
     volume_24h_usd: 10_000_000,
     agent_score: 2,
@@ -61,6 +61,56 @@ test('deduplicates conflicting tabs by classification evidence, then canonical i
 
   assert.deepEqual(result.tabs?.stocks_etfs.assets, [equity]);
   assert.equal(result.tabs?.crypto.count, 0);
+});
+
+test('preserves distinct canonical markets that share the same display symbol', () => {
+  const xyz = {
+    coin: 'IREN',
+    display_name: 'IREN',
+    canonical_coin_id: 'xyz:IREN',
+    tags: ['perp', 'equity'],
+  };
+  const para = {
+    coin: 'IREN',
+    display_name: 'IREN',
+    canonical_coin_id: 'para:IREN',
+    tags: ['perp', 'crypto'],
+  };
+  const result = normalizeHyperliquidMatrixTabs({
+    tabs: {
+      stocks_etfs: { assets: [xyz], count: 1 },
+      crypto: { assets: [para], count: 1 },
+    },
+    all_assets_count: 1,
+  });
+
+  assert.deepEqual(result.tabs?.stocks_etfs.assets, [xyz, para]);
+  assert.equal(result.tabs?.stocks_etfs.count, 2);
+  assert.equal(result.tabs?.crypto.count, 0);
+  assert.equal(result.all_assets_count, 2);
+});
+
+test('collapses true canonical duplicates within one tab using evidence ranking', () => {
+  const weak = {
+    coin: 'IREN',
+    canonical_coin_id: 'xyz:IREN',
+    tags: ['perp'],
+  };
+  const strong = {
+    coin: 'IREN',
+    canonical_coin_id: 'XYZ:IREN',
+    tags: ['perp', 'equity'],
+  };
+  const result = normalizeHyperliquidMatrixTabs({
+    tabs: {
+      stocks_etfs: { assets: [weak, strong], count: 2 },
+      crypto: { assets: [], count: 0 },
+    },
+  });
+
+  assert.deepEqual(result.tabs?.stocks_etfs.assets, [strong]);
+  assert.equal(result.tabs?.stocks_etfs.count, 1);
+  assert.equal(result.all_assets_count, 1);
 });
 
 test('preserves crypto and specialty tabs even when specialty rows carry equity tags', () => {
@@ -87,13 +137,13 @@ test('preserves crypto and specialty tabs even when specialty rows carry equity 
   assert.deepEqual(result.tabs?.themes.assets, [theme]);
 });
 
-test('preserves same-tab duplicates and rows without a displayed symbol', () => {
+test('preserves distinct canonical markets and rows without a canonical identity', () => {
   const first = { coin: 'SAME', canonical_coin_id: 'one:SAME', score: 1 };
   const second = { coin: 'SAME', canonical_coin_id: 'two:SAME', score: 2 };
-  const unnamed = { canonical_coin_id: 'unknown:1', score: 3 };
+  const unknown = { coin: 'SAME', score: 3 };
   const result = normalizeHyperliquidMatrixTabs({
     tabs: {
-      stocks_etfs: { assets: [first, second, unnamed], count: 3 },
+      stocks_etfs: { assets: [first, second, unknown], count: 3 },
       crypto: { assets: [], count: 0 },
     },
   });
@@ -101,15 +151,15 @@ test('preserves same-tab duplicates and rows without a displayed symbol', () => 
   const preserved = result.tabs?.stocks_etfs.assets ?? [];
   assert.equal(preserved.length, 3);
   assert.deepEqual(
-    preserved.map(asset => asset.canonical_coin_id).sort(),
-    ['one:SAME', 'two:SAME', 'unknown:1'],
+    preserved.map(asset => asset.canonical_coin_id ?? null).sort(),
+    [null, 'one:SAME', 'two:SAME'],
   );
   assert.ok(preserved.includes(first));
   assert.ok(preserved.includes(second));
-  assert.ok(preserved.includes(unnamed));
+  assert.ok(preserved.includes(unknown));
 });
 
-test('specialty rows win displayed-symbol conflicts against equity-tagged duplicates', () => {
+test('specialty rows win true canonical conflicts against equity-tagged duplicates', () => {
   for (const specialtyTab of ['commodities', 'indices', 'pre_ipo', 'themes']) {
     const specialty = {
       coin: 'CONFLICT',
@@ -119,7 +169,7 @@ test('specialty rows win displayed-symbol conflicts against equity-tagged duplic
     };
     const equity = {
       coin: 'CONFLICT',
-      canonical_coin_id: 'xyz:CONFLICT',
+      canonical_coin_id: `${specialtyTab}:CONFLICT`,
       tags: ['perp', 'equity'],
       volume_24h_usd: 99_000_000,
     };
