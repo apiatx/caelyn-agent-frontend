@@ -950,6 +950,12 @@ interface TsmomResult {
   meta:    TsmomMeta;
 }
 
+export interface AssetChartTarget {
+  canonicalId: string;
+  asset: MatrixAsset;
+  tab: string;
+}
+
 // ─── Trade Radar Types ────────────────────────────────────────────────────────
 interface TradeRadarCard {
   ticker:            string | null;
@@ -968,7 +974,7 @@ interface TradeRadarCard {
 }
 interface TradeRadarSetup {
   ticker:            string;
-  name:              string;
+  name:              string | null;
   side:              string;
   setup_type:        string | null;
   confidence:        number | null;
@@ -1221,8 +1227,8 @@ function CryptoTradingViewPanel({ coin, height = 440 }: { coin: string; height?:
   );
 }
 
-function ChartListModal({ title, coins: rawCoins, onClose }: { title: string; coins: string[]; onClose: () => void }) {
-  const coins = [...new Set(rawCoins)]; // deduplicate
+function ChartListModal({ title, targets: rawTargets, onClose }: { title: string; targets: AssetChartTarget[]; onClose: () => void }) {
+  const targets = dedupeChartTargets(rawTargets);
   return (
     <div
       style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -1234,7 +1240,7 @@ function ChartListModal({ title, coins: rawCoins, onClose }: { title: string; co
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px', borderBottom: `1px solid ${C.border}`, flexShrink: 0, background: C.card2 }}>
           <BarChart2 style={{ width: 11, height: 11, color: C.teal }} />
           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.5, color: C.teal, textTransform: 'uppercase' }}>{title}</span>
-          <span style={{ fontSize: 8, color: C.dim }}>· {coins.length} assets</span>
+          <span style={{ fontSize: 8, color: C.dim }}>· {targets.length} assets</span>
           <button onClick={onClose}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.dim, padding: 2, marginLeft: 'auto', display: 'flex' }}>
             <X style={{ width: 14, height: 14 }} />
@@ -1242,12 +1248,26 @@ function ChartListModal({ title, coins: rawCoins, onClose }: { title: string; co
         </div>
         {/* Scrollable chart list */}
         <div style={{ overflowY: 'auto', flex: 1 }}>
-          {coins.map(coin => (
-            <div key={coin} style={{ borderBottom:`1px solid ${C.border}` }}>
-              <div style={{ padding:'5px 12px 2px', fontSize:10, fontWeight:700, color:C.text, fontFamily:_hlFont }}>{coin}</div>
-              <CryptoTradingViewPanel coin={coin} height={280} />
+          {targets.map(target => {
+            const resolved = resolveMatrixChart(target.asset, target.tab);
+            return (
+            <div key={`${target.tab}:${target.canonicalId}`} style={{ borderBottom:`1px solid ${C.border}` }}>
+              <div style={{ padding:'5px 12px 2px', fontSize:10, fontWeight:700, color:C.text, fontFamily:_hlFont }}>
+                {resolved.title}
+                {(resolved.type === 'tradingview' || resolved.type === 'crypto-tradingview') && (
+                  <span style={{ marginLeft:8, fontSize:7.5, color:C.dim, fontWeight:500 }}>
+                    {resolved.type === 'tradingview'
+                      ? resolved.symbol
+                      : resolved.resolution.status === 'resolved'
+                        ? resolved.resolution.symbol
+                        : 'Safe chart unavailable'}
+                  </span>
+                )}
+              </div>
+              <ResolvedChartContent resolved={resolved} asset={target.asset} height={280} />
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1601,10 +1621,11 @@ function AdvancedSignalCards({ selectedCoin, onSelect, onChartOpen }: {
 type TsmomMarket = 'crypto' | 'stocks';
 type TsmomSK = 'default' | 'coin' | 's_adj' | 'side' | 'sigma' | 'lookback_1' | 'lookback_2' | 'lookback_3' | 'funding_bps' | 'w_scaled';
 
-function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
+function MomentumPanel({ selectedCoin, onSelect, onChartOpen, onTickerChart }: {
   selectedCoin: string | null;
   onSelect: (coin: string) => void;
-  onChartOpen: (title: string, coins: string[]) => void;
+  onChartOpen: (title: string, targets: AssetChartTarget[]) => void;
+  onTickerChart: (target: AssetChartTarget) => void;
 }) {
   const [open,    setOpen]    = useState(true);
   const [showAll, setShowAll] = useState(false);
@@ -1762,7 +1783,14 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
         </div>
         {signals.length > 0 && (
           <div style={{ paddingRight: 10 }}>
-            <ChartBtn onClick={() => onChartOpen('Time-Series Momentum', display.map(s => s.coin))} />
+            <ChartBtn onClick={() => onChartOpen(
+              'Time-Series Momentum',
+              display.map(sig => {
+                const canonicalId = sig.canonical_coin_id ?? sig.coin;
+                const displaySymbol = sig.display_symbol ?? cleanSym(sig.coin);
+                return makeExplicitChartTarget(canonicalId, displaySymbol, market === 'stocks' ? 'stocks_etfs' : 'crypto');
+              }),
+            )} />
           </div>
         )}
       </div>
@@ -1817,12 +1845,23 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
                 {/* Rank */}
                 <span style={{ fontSize: 7.5, color: C.dimLow, fontFamily: _hlFont }}>{i + 1}</span>
                 {/* Coin */}
-                <span style={{ minWidth: 0, fontFamily: _hlFont, lineHeight: 1 }}>
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onTickerChart(makeExplicitChartTarget(
+                      canonicalId,
+                      displaySymbol,
+                      market === 'stocks' ? 'stocks_etfs' : 'crypto',
+                    ));
+                  }}
+                  title={`Open ${displaySymbol} chart`}
+                  style={{ minWidth:0, fontFamily:_hlFont, lineHeight:1, padding:0, border:0, background:'none', textAlign:'left', cursor:'pointer' }}>
                   <span style={{ display: 'block', fontSize: 9.5, fontWeight: 700, color: isSel ? C.purple : C.text,
                     overflow: 'hidden', textOverflow: 'ellipsis' }}>{displaySymbol}</span>
                   {venue && <span title={canonicalId} style={{ display: 'block', marginTop: 2, fontSize: 6.5,
                     color: C.dimLow, textTransform: 'uppercase' }}>{venue}</span>}
-                </span>
+                </button>
                 {/* Signal bar — fills 1fr */}
                 <div style={{ position: 'relative', height: 12, background: C.dimLow, borderRadius: 2, overflow: 'hidden', marginRight: 8 }}>
                   <div style={{ position: 'absolute', left: '50%', top: 0, width: 1, height: '100%', background: C.border, zIndex: 1 }} />
@@ -1900,6 +1939,7 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen }: {
 interface MatrixAsset {
   coin?: string;
   display_name?: string;
+  canonical_coin_id?: string;
   asset_type?: string;
   category_source?: string;
   matrix_tab?: string;
@@ -2226,13 +2266,13 @@ const MATRIX_STOCK_TV: Record<string, string> = {
   BABA:'NYSE:BABA',    TSM:'NYSE:TSM',     MSTR:'NASDAQ:MSTR',
 };
 
-type MatrixChartResult =
+export type MatrixChartResult =
   | { type: 'tradingview'; symbol: string; title: string }
   | { type: 'crypto-tradingview'; resolution: CryptoTradingViewResolution; title: string }
   | { type: 'hyperliquid'; coin: string; title: string }
   | { type: 'unavailable'; title: string; reason: string };
 
-function resolveMatrixChart(asset: MatrixAsset, activeTab: string): MatrixChartResult {
+export function resolveMatrixChart(asset: MatrixAsset, activeTab: string): MatrixChartResult {
   const sym   = (asset.coin ?? '').toUpperCase();
   const title = asset.display_name ?? asset.coin ?? sym;
   const sourceCategory = String(asset.category_source ?? '').toLowerCase();
@@ -2278,16 +2318,121 @@ function resolveMatrixChart(asset: MatrixAsset, activeTab: string): MatrixChartR
   };
 }
 
-function buildTvEmbedUrl(symbol: string): string {
+export function makeExplicitChartTarget(canonicalId: string, symbol: string, tab: string, displayName?: string): AssetChartTarget {
+  return {
+    canonicalId,
+    tab,
+    asset: {
+      coin: cleanSym(symbol),
+      display_name: displayName ?? cleanSym(symbol),
+      matrix_tab: tab,
+    },
+  };
+}
+
+function makeUnavailableChartTarget(canonicalId: string, symbol: string): AssetChartTarget {
+  return makeExplicitChartTarget(canonicalId, symbol, 'unavailable');
+}
+
+export function chartTargetFromScreenerRow(row: ScreenerRow): AssetChartTarget {
+  const rawSymbol = row.coin ?? row.displayName ?? '';
+  const displaySymbol = cleanSym(rawSymbol);
+  const override = MATRIX_SYMBOL_OVERRIDES_FE[rawSymbol.toUpperCase()]
+    ?? MATRIX_SYMBOL_OVERRIDES_FE[displaySymbol.toUpperCase()];
+  const cat = String(row.category ?? '').toLowerCase();
+  const tags = Array.isArray(row.tags) ? row.tags.map(tag => String(tag).toLowerCase()) : [];
+  const knownEvidence = new Set([
+    'theme', 'themes', 'pre-ipo', 'preipo', 'commodity', 'commodities',
+    'index', 'indices', 'equity', 'stock', 'etf', 'l1', 'defi', 'ai',
+    'meme', 'gaming', 'rwa', 'crypto',
+  ]);
+  const hasKnownClassification = override != null || knownEvidence.has(cat) || tags.some(tag => knownEvidence.has(tag));
+  if (!hasKnownClassification) {
+    return makeUnavailableChartTarget(rawSymbol, displaySymbol);
+  }
+  const familyFor = (value: string): string | null => {
+    if (['theme', 'themes'].includes(value)) return 'themes';
+    if (['pre-ipo', 'preipo'].includes(value)) return 'pre-ipo';
+    if (['commodity', 'commodities'].includes(value)) return 'commodities';
+    if (['index', 'indices'].includes(value)) return 'indices';
+    if (['equity', 'stock', 'etf'].includes(value)) return 'stocks_etfs';
+    if (['l1', 'defi', 'ai', 'meme', 'gaming', 'rwa', 'crypto'].includes(value)) return 'crypto';
+    return null;
+  };
+  const classificationFamilies = new Set([cat, ...tags].map(familyFor).filter((value): value is string => value != null));
+  if (override == null && classificationFamilies.size !== 1) {
+    return makeUnavailableChartTarget(`conflicting:${rawSymbol}`, displaySymbol);
+  }
+  const tab = override ?? classifyScreenerRow(row);
+  return {
+    canonicalId: rawSymbol,
+    tab,
+    asset: {
+      coin: displaySymbol,
+      display_name: row.displayName || displaySymbol,
+      asset_type: row.marketType,
+      category_source: row.category,
+      matrix_tab: tab,
+      mark: row.markPrice,
+      oracle: row.oraclePrice,
+      change_24h_pct: row.change24hPct,
+      funding: row.funding,
+      open_interest_usd: row.openInterest,
+      volume_24h_usd: row.volume24h,
+      premium_pct: row.premium != null ? row.premium * 100 : null,
+      mark_oracle_pct: row.distMarkOracle != null ? row.distMarkOracle * 100 : null,
+      book_imbalance: row.bidAskImbalance,
+      trade_imbalance: row.tradeImbalance,
+    },
+  };
+}
+
+export function dedupeChartTargets(targets: AssetChartTarget[]): AssetChartTarget[] {
+  return Array.from(
+    new Map(targets.map(target => [`${target.tab}:${target.canonicalId}`, target])).values(),
+  );
+}
+
+function buildTvEmbedUrl(symbol: string, height = 480): string {
   return (
     'https://s.tradingview.com/embed-widget/advanced-chart/?locale=en' +
-    '&width=100%25&height=480&interval=D&range=3M&style=1&toolbar_bg=0d1623' +
+    `&width=100%25&height=${height}&interval=D&range=3M&style=1&toolbar_bg=0d1623` +
     '&enable_publishing=false&withdateranges=true&hide_side_toolbar=false' +
     '&allow_symbol_change=false&calendar=false&studies=%5B%5D&theme=dark' +
     '&timezone=exchange&hide_top_toolbar=false' +
     '&disabled_features=%5B%22volume_force_overlay%22%2C%22create_volume_indicator_by_default%22%5D' +
     '&enabled_features=%5B%22use_localstorage_for_settings%22%2C%22study_templates%22%2C%22header_indicators%22%2C%22header_compare%22%2C%22header_undo_redo%22%2C%22header_screenshot%22%2C%22header_chart_type%22%2C%22header_settings%22%2C%22header_resolutions%22%2C%22header_fullscreen_button%22%2C%22left_toolbar%22%2C%22drawing_templates%22%5D' +
     `&symbol=${encodeURIComponent(symbol)}`
+  );
+}
+
+function ResolvedChartContent({ resolved, asset, height }: {
+  resolved: MatrixChartResult;
+  asset: MatrixAsset;
+  height: number;
+}) {
+  if (resolved.type === 'tradingview') {
+    return (
+      <iframe
+        key={resolved.symbol}
+        src={buildTvEmbedUrl(resolved.symbol, height)}
+        style={{ width:'100%', height, border:'none', display:'block' }}
+        title={`${resolved.title} chart`}
+      />
+    );
+  }
+  if (resolved.type === 'crypto-tradingview') {
+    return <CryptoTradingViewPanel coin={asset.coin ?? ''} height={height} />;
+  }
+  if (resolved.type === 'hyperliquid') {
+    return <div style={{ paddingTop:6 }}><CoinChartPanel coin={resolved.coin} interval="1d" /></div>;
+  }
+  return (
+    <div style={{ height, padding:24, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, textAlign:'center', background:'#050c16' }}>
+      <ShieldAlert style={{ width:24, height:24, color:C.orange }} />
+      <span style={{ fontSize:10, fontWeight:800, color:C.orange, letterSpacing:1, textTransform:'uppercase' }}>Chart unavailable</span>
+      <span style={{ maxWidth:420, fontSize:8.5, lineHeight:1.55, color:C.dim }}>{resolved.reason}</span>
+    </div>
   );
 }
 
@@ -2712,8 +2857,13 @@ function MarketMatrixSection({ search, fallbackRows }: { search: string; fallbac
 }
 
 // ─── Trade Radar: Setup Explanation Panel ────────────────────────────────────
-function SetupExplanationPanel({ card, label, color, onClose }: {
-  card: TradeRadarCard; label: string; color: string; onClose: () => void;
+function SetupExplanationPanel({ card, label, color, onClose, onOpenChart, resolveTickerTarget }: {
+  card: TradeRadarCard;
+  label: string;
+  color: string;
+  onClose: () => void;
+  onOpenChart: (target: AssetChartTarget) => void;
+  resolveTickerTarget: (ticker: string) => AssetChartTarget;
 }) {
   const sideColor: Record<string, string> = { LONG:C.green, SHORT:C.red, WATCH:C.amber, AVOID:'#f97316', NEUTRAL:C.dim };
   const side = (card.side ?? '').toUpperCase();
@@ -2725,7 +2875,16 @@ function SetupExplanationPanel({ card, label, color, onClose }: {
       </button>
       {/* ── Header row ── */}
       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8, flexWrap:'wrap' }}>
-        <span style={{ fontSize:15, fontWeight:800, color, fontFamily:_hlFont }}>{card.name ?? '—'}</span>
+        <button
+          type="button"
+          onClick={() => {
+            const ticker = card.ticker ?? card.name;
+            if (ticker) onOpenChart(resolveTickerTarget(ticker));
+          }}
+          title={card.name || card.ticker ? `Open ${card.name ?? card.ticker} chart` : undefined}
+          style={{ fontSize:15, fontWeight:800, color, fontFamily:_hlFont, padding:0, border:0, background:'none', cursor:card.name||card.ticker?'pointer':'default' }}>
+          {card.name ?? card.ticker ?? '—'}
+        </button>
         <span style={{ fontSize:8, fontWeight:800, color:sCol, background:`${sCol}18`, border:`1px solid ${sCol}44`, borderRadius:3, padding:'1px 6px', letterSpacing:0.5 }}>{side || '—'}</span>
         {card.setup_type && (
           <span style={{ fontSize:8, fontWeight:700, color:C.dim, background:`${C.border}`, borderRadius:3, padding:'1px 6px', letterSpacing:0.3 }}>{card.setup_type}</span>
@@ -2781,9 +2940,21 @@ function SetupExplanationPanel({ card, label, color, onClose }: {
 }
 
 // ─── Priority Watchlist Strip ────────────────────────────────────────────────
-interface PriorityItem { ticker: string; side: string; reason: string | null; source: 'both' | 'lab' | 'radar' | 'avoid'; }
+interface PriorityItem {
+  ticker: string;
+  side: string;
+  reason: string | null;
+  source: 'both' | 'lab' | 'radar' | 'avoid';
+  chartTarget: AssetChartTarget;
+}
 
-function renderPriorityBucket(label: string, color: string, icon: string, list: PriorityItem[]) {
+function renderPriorityBucket(
+  label: string,
+  color: string,
+  icon: string,
+  list: PriorityItem[],
+  onOpenChart: (target: AssetChartTarget) => void,
+) {
   if (list.length === 0) return null;
   return (
     <div style={{ flex:1, minWidth:140 }}>
@@ -2792,7 +2963,13 @@ function renderPriorityBucket(label: string, color: string, icon: string, list: 
         const sCol = SIDE_COLOR[(item.side ?? '').toUpperCase()] ?? C.dim;
         return (
           <div key={i} style={{ display:'flex', alignItems:'center', gap:5, marginBottom:4 }}>
-            <span style={{ fontSize:9.5, fontWeight:800, color, fontFamily:_hlFont, minWidth:34 }}>{item.ticker}</span>
+            <button
+              type="button"
+              onClick={() => onOpenChart(item.chartTarget)}
+              title={`Open ${item.ticker} chart`}
+              style={{ fontSize:9.5, fontWeight:800, color, fontFamily:_hlFont, minWidth:34, padding:0, border:0, background:'none', textAlign:'left', cursor:'pointer' }}>
+              {item.ticker}
+            </button>
             <span style={{ fontSize:7, fontWeight:700, color:sCol, background:`${sCol}15`, borderRadius:3, padding:'1px 4px' }}>{(item.side||'').toUpperCase()}</span>
             {item.source === 'both' && (
               <span style={{ fontSize:7, color:'#a3e635', background:'#84cc1615', borderRadius:3, padding:'1px 5px', fontWeight:700 }}>✓ Both</span>
@@ -2807,7 +2984,10 @@ function renderPriorityBucket(label: string, color: string, icon: string, list: 
   );
 }
 
-function PriorityWatchlistStrip({ items }: { items: PriorityItem[] }) {
+function PriorityWatchlistStrip({ items, onOpenChart }: {
+  items: PriorityItem[];
+  onOpenChart: (target: AssetChartTarget) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const confirmed = items.filter(x => x.source === 'both');
   const labOnly   = items.filter(x => x.source === 'lab').slice(0, 4);
@@ -2830,10 +3010,10 @@ function PriorityWatchlistStrip({ items }: { items: PriorityItem[] }) {
       </button>
       {expanded && (
         <div style={{ padding:'8px 14px 12px', display:'flex', gap:20, flexWrap:'wrap' }}>
-          {renderPriorityBucket('Confirmed by Both', '#a3e635', '⚡', confirmed)}
-          {renderPriorityBucket('Signal Lab Picks',  C.teal,   '◆', labOnly)}
-          {renderPriorityBucket('Radar Setups',      C.purple, '◎', radarOnly)}
-          {renderPriorityBucket('Avoid / Crowded',   C.red,    '⊘', avoid)}
+          {renderPriorityBucket('Confirmed by Both', '#a3e635', '⚡', confirmed, onOpenChart)}
+          {renderPriorityBucket('Signal Lab Picks',  C.teal,   '◆', labOnly, onOpenChart)}
+          {renderPriorityBucket('Radar Setups',      C.purple, '◎', radarOnly, onOpenChart)}
+          {renderPriorityBucket('Avoid / Crowded',   C.red,    '⊘', avoid, onOpenChart)}
         </div>
       )}
     </div>
@@ -2857,12 +3037,14 @@ const SIDE_COLOR: Record<string, string> = {
   LONG: C.green, SHORT: C.red, WATCH: C.amber, AVOID: '#f97316', NEUTRAL: C.dim,
 };
 
-function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSetup, overlapSet = new Set(), labTickerSet = new Set() }: {
+function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSetup, onOpenChart, resolveTickerTarget, overlapSet = new Set(), labTickerSet = new Set() }: {
   data: TradeRadarData | null;
   isLoading: boolean;
   isError: boolean;
   selectedSetup: { card: TradeRadarCard; label: string; color: string } | null;
   onSelectSetup: (s: { card: TradeRadarCard; label: string; color: string } | null) => void;
+  onOpenChart: (target: AssetChartTarget) => void;
+  resolveTickerTarget: (ticker: string) => AssetChartTarget;
   overlapSet?: Set<string>;
   labTickerSet?: Set<string>;
 }) {
@@ -2944,7 +3126,17 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
               {card ? (
                 <>
                   <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:3, flexWrap:'wrap' }}>
-                    <span style={{ fontSize:13, fontWeight:800, color, fontFamily:_hlFont }}>{card.name ?? '—'}</span>
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        const ticker = card.ticker ?? card.name;
+                        if (ticker) onOpenChart(resolveTickerTarget(ticker));
+                      }}
+                      title={card.name || card.ticker ? `Open ${card.name ?? card.ticker} chart` : undefined}
+                      style={{ fontSize:13, fontWeight:800, color, fontFamily:_hlFont, padding:0, border:0, background:'none', cursor:card.name||card.ticker?'pointer':'default' }}>
+                      {card.name ?? card.ticker ?? '—'}
+                    </button>
                     <span style={{ fontSize:7.5, fontWeight:700, color:sCol, background:`${sCol}18`, border:`1px solid ${sCol}44`, borderRadius:3, padding:'1px 5px' }}>{side || '—'}</span>
                     {card.timing_state && (
                       <span style={{ fontSize:7, fontWeight:700, color:C.amber, background:`${C.amber}15`, borderRadius:3, padding:'1px 4px' }}>{card.timing_state}</span>
@@ -3019,12 +3211,19 @@ function TradeRadarSection({ data, isLoading, isError, selectedSetup, onSelectSe
                 onMouseEnter={e => { if (!isRowSelected) (e.currentTarget as HTMLElement).style.background=`${C.border}`; }}
                 onMouseLeave={e => { if (!isRowSelected) (e.currentTarget as HTMLElement).style.background=i%2===0?C.bg:C.card2; }}>
                 <span style={{ fontSize:7.5, color:C.dimLow }}>{i+1}</span>
-                <span style={{ fontSize:9.5, fontWeight:700, color:C.text, fontFamily:_hlFont }}>
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onOpenChart(resolveTickerTarget(s.ticker));
+                  }}
+                  title={`Open ${s.name ?? s.ticker} chart`}
+                  style={{ fontSize:9.5, fontWeight:700, color:C.text, fontFamily:_hlFont, padding:0, border:0, background:'none', textAlign:'left', cursor:'pointer' }}>
                   {s.name ?? s.ticker}
                   {s.name && overlapSet.has(s.name.toUpperCase()) && (
                     <span style={{ fontSize:6.5, color:'#a3e635', background:'#84cc1610', border:'1px solid #84cc1625', borderRadius:3, padding:'1px 4px', marginLeft:4, fontWeight:800 }}>✓</span>
                   )}
-                </span>
+                </button>
                 <span style={{ fontSize:7.5, fontWeight:700, color:sCol }}>{side || '—'}</span>
                 <span style={{ fontSize:7.5, color:C.dim }}>{s.setup_type ?? '—'}</span>
                 <span style={{ fontSize:7.5, color:C.dim, fontFamily:_hlFont }}>{s.confidence != null ? `${(s.confidence*100).toFixed(0)}%` : '—'}</span>
@@ -3062,7 +3261,8 @@ export default function HyperliquidScreenerPage() {
   const [agentStage,    setAgentStage]    = useState('');
   const [showFilters,   setShowFilters]   = useState(false);
   const [rowHighlights, setRowHighlights] = useState<Set<string>>(new Set());
-  const [chartModal,    setChartModal]    = useState<{ title: string; coins: string[] } | null>(null);
+  const [chartModal,    setChartModal]    = useState<{ title: string; targets: AssetChartTarget[] } | null>(null);
+  const [assetChart,    setAssetChart]    = useState<AssetChartTarget | null>(null);
   const [pageTab,       setPageTab]       = useState<'radar' | 'lab'>('radar');
   const [selectedSetup, setSelectedSetup] = useState<{ card: TradeRadarCard; label: string; color: string } | null>(null);
 
@@ -3095,6 +3295,21 @@ export default function HyperliquidScreenerPage() {
     retry: 1,
     refetchOnWindowFocus: false,
     refetchInterval: 60_000,
+  });
+
+  const { data: matrixClassification } = useQuery<MatrixResponse>({
+    queryKey: ['hl-market-matrix'],
+    queryFn: async () => {
+      const r = await fetch('/api/hyperliquid/screener/market-matrix');
+      if (!r.ok) throw new Error(`Server returned ${r.status}`);
+      return r.json();
+    },
+    refetchInterval: 20_000,
+    staleTime: 18_000,
+    gcTime: 60 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    placeholderData: (prev: any) => prev,
   });
 
   // Permanent last-good-data ref — NEVER cleared, so the screen never goes
@@ -3191,13 +3406,79 @@ export default function HyperliquidScreenerPage() {
 
   const signalSections = useMemo(() => deriveSignalSections(sorted), [sorted]);
 
+  const rowsByTicker = useMemo(() => {
+    const canonical = new Map<string, ScreenerRow>();
+    const aliases = new Map<string, ScreenerRow | null>();
+    const addAlias = (key: string | null | undefined, row: ScreenerRow) => {
+      const normalized = String(key ?? '').trim().toUpperCase();
+      if (!normalized) return;
+      const current = aliases.get(normalized);
+      if (current && current.coin !== row.coin) aliases.set(normalized, null);
+      else if (current === undefined) aliases.set(normalized, row);
+    };
+    rows.forEach(row => {
+      canonical.set(row.coin.trim().toUpperCase(), row);
+      addAlias(cleanSym(row.coin), row);
+      addAlias(row.displayName, row);
+    });
+    return { canonical, aliases };
+  }, [rows]);
+
+  const matrixTargetsByTicker = useMemo(() => {
+    const lookup = new Map<string, AssetChartTarget | null>();
+    const add = (key: string | null | undefined, target: AssetChartTarget) => {
+      const normalized = String(key ?? '').trim().toUpperCase();
+      if (!normalized) return;
+      const current = lookup.get(normalized);
+      if (current && current.canonicalId !== target.canonicalId) lookup.set(normalized, null);
+      else if (current === undefined) lookup.set(normalized, target);
+    };
+    Object.entries(matrixClassification?.tabs ?? {}).forEach(([tab, value]) => {
+      (value?.assets ?? []).forEach(asset => {
+        const canonicalId = asset.canonical_coin_id ?? asset.coin;
+        if (!canonicalId || !asset.coin) return;
+        const target: AssetChartTarget = { canonicalId, asset: { ...asset, matrix_tab: tab }, tab };
+        add(canonicalId, target);
+        add(asset.coin, target);
+        add(asset.display_name, target);
+      });
+    });
+    return lookup;
+  }, [matrixClassification]);
+
+  const resolveTickerTarget = useCallback((ticker: string): AssetChartTarget => {
+    const normalized = ticker.trim().toUpperCase();
+    const cleanTicker = cleanSym(normalized);
+    const matrixKey = matrixTargetsByTicker.has(normalized)
+      ? normalized
+      : matrixTargetsByTicker.has(cleanTicker)
+        ? cleanTicker
+        : null;
+    if (matrixKey != null) {
+      return matrixTargetsByTicker.get(matrixKey)
+        ?? makeUnavailableChartTarget(`ambiguous:${normalized}`, ticker);
+    }
+    const row = rowsByTicker.canonical.get(normalized)
+      ?? rowsByTicker.aliases.get(normalized)
+      ?? rowsByTicker.aliases.get(cleanSym(normalized));
+    return row
+      ? chartTargetFromScreenerRow(row)
+      : makeUnavailableChartTarget(`unclassified:${normalized}`, ticker);
+  }, [matrixTargetsByTicker, rowsByTicker]);
+
   // ── Cross-engine overlap computation ─────────────────────────────────────
   // Radar tickers: from cards + top_setups (use clean `name` field)
   const radarTickerSet = useMemo(() => {
     if (!tradeRadar?.trade_radar) return new Set<string>();
     const s = new Set<string>();
-    Object.values(tradeRadar.trade_radar.cards).forEach(c => { if (c?.name) s.add(c.name.toUpperCase()); });
-    (tradeRadar.trade_radar.top_setups ?? []).forEach(ts => { if (ts.name) s.add(ts.name.toUpperCase()); });
+    Object.values(tradeRadar.trade_radar.cards).forEach(c => {
+      const ticker = c?.name ?? c?.ticker;
+      if (ticker) s.add(ticker.toUpperCase());
+    });
+    (tradeRadar.trade_radar.top_setups ?? []).forEach(ts => {
+      const ticker = ts.name ?? ts.ticker;
+      if (ticker) s.add(ticker.toUpperCase());
+    });
     return s;
   }, [tradeRadar]);
 
@@ -3220,40 +3501,52 @@ export default function HyperliquidScreenerPage() {
   const priorityItems = useMemo((): PriorityItem[] => {
     const items: PriorityItem[] = [];
     const seen = new Set<string>();
+    const addItem = (item: Omit<PriorityItem, 'chartTarget'>, target: AssetChartTarget) => {
+      const key = `${target.tab}:${target.canonicalId}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      items.push({ ...item, chartTarget: target });
+    };
 
     // Confirmed by both
     overlapSet.forEach(ticker => {
-      if (seen.has(ticker)) return; seen.add(ticker);
       const row = labSortedRows.find(r => r.coin.toUpperCase() === ticker);
+      if (!row) return;
       const side = row?.signalDirection === 'bullish' ? 'LONG' : row?.signalDirection === 'bearish' ? 'SHORT' : 'WATCH';
-      items.push({ ticker, side, reason: null, source: 'both' });
+      addItem({ ticker, side, reason: null, source: 'both' }, resolveTickerTarget(row.coin));
     });
 
     // Radar-only (not in lab)
     (tradeRadar?.trade_radar?.top_setups ?? []).slice(0, 6).forEach(ts => {
-      const t = (ts.name ?? '').toUpperCase();
-      if (!t || seen.has(t) || overlapSet.has(t)) return;
-      seen.add(t);
-      items.push({ ticker: ts.name, side: ts.side ?? 'WATCH', reason: ts.action_label, source: 'radar' });
+      const ticker = ts.name ?? ts.ticker;
+      const t = ticker.toUpperCase();
+      if (!t || overlapSet.has(t)) return;
+      addItem(
+        { ticker, side: ts.side ?? 'WATCH', reason: ts.action_label, source: 'radar' },
+        resolveTickerTarget(ts.ticker ?? ticker),
+      );
     });
 
     // Lab-only (not in radar)
     labSortedRows.slice(0, 8).forEach(row => {
       const t = row.coin.toUpperCase();
-      if (seen.has(t) || radarTickerSet.has(t)) return;
-      seen.add(t);
+      if (radarTickerSet.has(t)) return;
       const side = row.signalDirection === 'bullish' ? 'LONG' : row.signalDirection === 'bearish' ? 'SHORT' : 'WATCH';
-      items.push({ ticker: row.coin, side, reason: null, source: 'lab' });
+      addItem({ ticker: row.coin, side, reason: null, source: 'lab' }, resolveTickerTarget(row.coin));
     });
 
     // Avoid / crowded
     const avoidCard = tradeRadar?.trade_radar?.cards?.crowded_avoid;
-    if (avoidCard?.name && !seen.has(avoidCard.name.toUpperCase())) {
-      items.push({ ticker: avoidCard.name, side: avoidCard.side ?? 'AVOID', reason: avoidCard.action_label, source: 'avoid' });
+    const avoidTicker = avoidCard?.name ?? avoidCard?.ticker;
+    if (avoidCard && avoidTicker) {
+      addItem(
+        { ticker: avoidTicker, side: avoidCard.side ?? 'AVOID', reason: avoidCard.action_label, source: 'avoid' },
+        resolveTickerTarget(avoidCard.ticker ?? avoidTicker),
+      );
     }
 
     return items;
-  }, [overlapSet, labSortedRows, radarTickerSet, tradeRadar]);
+  }, [overlapSet, labSortedRows, radarTickerSet, tradeRadar, resolveTickerTarget]);
 
   const summaryItems = useMemo(() => {
     const meta = displayData?.meta;
@@ -3358,7 +3651,11 @@ export default function HyperliquidScreenerPage() {
           : summaryItems.filter(item => item.id !== 'ts').map(item => (
               <SummaryChip key={item.id} label={item.label} coin={item.coin} value={item.value} color={item.color}
                 selected={!!item.coin && selectedCoin===item.coin}
-                onClick={item.coin ? () => setSelectedCoin(item.coin!) : undefined} />
+                onClick={item.coin
+                  ? pageTab === 'radar'
+                    ? () => setAssetChart(resolveTickerTarget(item.coin!))
+                    : () => setSelectedCoin(item.coin!)
+                  : undefined} />
             ))
         }
         {/* Right-side controls */}
@@ -3465,7 +3762,7 @@ export default function HyperliquidScreenerPage() {
         {displayData && pageTab === 'radar' && (
           <>
             {/* ── PRIORITY WATCHLIST ── */}
-            <PriorityWatchlistStrip items={priorityItems} radarData={tradeRadar ?? null} />
+            <PriorityWatchlistStrip items={priorityItems} onOpenChart={setAssetChart} />
 
             {/* ── TRADE RADAR COMMAND CENTER ── */}
             <TradeRadarSection
@@ -3474,6 +3771,8 @@ export default function HyperliquidScreenerPage() {
               isError={trRadarError}
               selectedSetup={selectedSetup}
               onSelectSetup={s => setSelectedSetup(s)}
+              onOpenChart={setAssetChart}
+              resolveTickerTarget={resolveTickerTarget}
               overlapSet={overlapSet}
               labTickerSet={labTickerSet}
             />
@@ -3485,6 +3784,8 @@ export default function HyperliquidScreenerPage() {
                 label={selectedSetup.label}
                 color={selectedSetup.color}
                 onClose={() => setSelectedSetup(null)}
+                onOpenChart={setAssetChart}
+                resolveTickerTarget={resolveTickerTarget}
               />
             )}
 
@@ -3495,7 +3796,8 @@ export default function HyperliquidScreenerPage() {
             {sorted.length > 0 && (
               <SectionErrorBoundary label="Time-Series Momentum">
                 <MomentumPanel selectedCoin={selectedCoin} onSelect={setSelectedCoin}
-                  onChartOpen={(title, coins) => setChartModal({ title, coins })} />
+                  onTickerChart={setAssetChart}
+                  onChartOpen={(title, targets) => setChartModal({ title, targets })} />
               </SectionErrorBoundary>
             )}
           </>
@@ -3517,7 +3819,7 @@ export default function HyperliquidScreenerPage() {
             </div>
 
             {/* ── PRIORITY WATCHLIST ── */}
-            <PriorityWatchlistStrip items={priorityItems} radarData={tradeRadar ?? null} />
+            <PriorityWatchlistStrip items={priorityItems} onOpenChart={setAssetChart} />
 
             {/* ── HERO: SIGNAL BRIEF (Agent Market Brief — existing widget) ── */}
             <AgentMarketBrief
@@ -3529,7 +3831,7 @@ export default function HyperliquidScreenerPage() {
             {sorted.length > 0 && (
               <SectionErrorBoundary label="Advanced Signals">
                 <AdvancedSignalCards selectedCoin={selectedCoin} onSelect={setSelectedCoin}
-                  onChartOpen={(title, coins) => setChartModal({ title, coins })} />
+                  onChartOpen={(title, coins) => setChartModal({ title, targets: coins.map(resolveTickerTarget) })} />
               </SectionErrorBoundary>
             )}
 
@@ -3539,7 +3841,7 @@ export default function HyperliquidScreenerPage() {
                 {signalSections.map(sec => (
                   <SignalBoard key={sec.id} section={sec} selectedCoin={selectedCoin}
                     onSelect={setSelectedCoin}
-                    onChartOpen={(title, coins) => setChartModal({ title, coins })} />
+                    onChartOpen={(title, coins) => setChartModal({ title, targets: coins.map(resolveTickerTarget) })} />
                 ))}
               </div>
             )}
@@ -3560,8 +3862,15 @@ export default function HyperliquidScreenerPage() {
       {chartModal && (
         <ChartListModal
           title={chartModal.title}
-          coins={chartModal.coins}
+          targets={chartModal.targets}
           onClose={() => setChartModal(null)}
+        />
+      )}
+      {assetChart && (
+        <MatrixChartModal
+          asset={assetChart.asset}
+          activeTab={assetChart.tab}
+          onClose={() => setAssetChart(null)}
         />
       )}
 
