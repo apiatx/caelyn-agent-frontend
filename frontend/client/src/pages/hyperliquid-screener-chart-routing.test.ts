@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  buildMatrixChartTargetLookup,
   chartTargetFromScreenerRow,
   dedupeChartTargets,
   makeExplicitChartTarget,
@@ -19,21 +20,40 @@ function row(overrides: Partial<ScreenerRow>): ScreenerRow {
   } as ScreenerRow;
 }
 
-test('classified MU stock never routes through the crypto resolver', () => {
+test('classified stocks and ETFs never route through the crypto resolver', () => {
+  for (const coin of ['MU', 'NVDA', 'TSLA', 'SPY', 'QQQ']) {
+    const target = chartTargetFromScreenerRow(row({
+      coin,
+      displayName: coin === 'MU' ? 'Micron' : coin,
+      category: coin === 'SPY' || coin === 'QQQ' ? 'etf' : 'equity',
+      tags: [coin === 'SPY' || coin === 'QQQ' ? 'etf' : 'stock'],
+    }));
+    const resolved = resolveMatrixChart(target.asset, target.tab);
+
+    assert.equal(target.tab, 'stocks_etfs');
+    assert.equal(resolved.type, 'tradingview');
+    if (resolved.type === 'tradingview') {
+      assert.equal(resolved.symbol.includes('USDT'), false);
+      if (coin === 'MU') assert.equal(resolved.symbol, 'MU');
+    }
+  }
+});
+
+test('row-derived targets retain namespaced canonical identity in the asset context', () => {
   const target = chartTargetFromScreenerRow(row({
-    coin: 'MU',
-    displayName: 'Micron',
+    coin: 'xyz:MU',
+    displayName: 'MU',
     category: 'equity',
     tags: ['stock'],
   }));
-  const resolved = resolveMatrixChart(target.asset, target.tab);
 
-  assert.equal(target.tab, 'stocks_etfs');
-  assert.deepEqual(resolved, { type: 'tradingview', symbol: 'MU', title: 'Micron' });
+  assert.equal(target.canonicalId, 'xyz:MU');
+  assert.equal(target.asset.canonical_coin_id, 'xyz:MU');
+  assert.equal(resolveMatrixChart(target.asset, target.tab).type, 'tradingview');
 });
 
 test('classified crypto preserves hardened TradingView resolution', () => {
-  for (const coin of ['BTC', 'HYPE']) {
+  for (const coin of ['BTC', 'ETH', 'SOL', 'HYPE']) {
     const target = chartTargetFromScreenerRow(row({
       coin,
       displayName: coin,
@@ -86,7 +106,18 @@ test('authoritative TSMOM market selects stock or crypto before resolution', () 
     symbol: 'MU',
     title: 'MU',
   });
+  assert.equal(stock.asset.canonical_coin_id, 'xyz:MU');
   assert.equal(resolveMatrixChart(crypto.asset, crypto.tab).type, 'crypto-tradingview');
+});
+
+test('Matrix lookup preserves canonical markets and fails closed on a shared alias', () => {
+  const lookup = buildMatrixChartTargetLookup({
+    stocks_etfs: { assets: [{ coin: 'ABC', display_name: 'ABC', canonical_coin_id: 'xyz:ABC' }] },
+    crypto: { assets: [{ coin: 'ABC', display_name: 'ABC', canonical_coin_id: 'ABC' }] },
+  });
+
+  assert.equal(lookup.get('XYZ:ABC')?.canonicalId, 'xyz:ABC');
+  assert.equal(lookup.get('ABC'), null);
 });
 
 test('chart lists preserve same display ticker from distinct canonical markets', () => {

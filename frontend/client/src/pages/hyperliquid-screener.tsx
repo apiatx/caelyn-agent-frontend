@@ -1936,7 +1936,7 @@ function MomentumPanel({ selectedCoin, onSelect, onChartOpen, onTickerChart }: {
 }
 
 // ─── Market Matrix Section (tabbed, backend-driven) ─────────────────────────
-interface MatrixAsset {
+export interface MatrixAsset {
   coin?: string;
   display_name?: string;
   canonical_coin_id?: string;
@@ -2325,6 +2325,7 @@ export function makeExplicitChartTarget(canonicalId: string, symbol: string, tab
     asset: {
       coin: cleanSym(symbol),
       display_name: displayName ?? cleanSym(symbol),
+      canonical_coin_id: canonicalId,
       matrix_tab: tab,
     },
   };
@@ -2370,6 +2371,7 @@ export function chartTargetFromScreenerRow(row: ScreenerRow): AssetChartTarget {
     asset: {
       coin: displaySymbol,
       display_name: row.displayName || displaySymbol,
+      canonical_coin_id: rawSymbol,
       asset_type: row.marketType,
       category_source: row.category,
       matrix_tab: tab,
@@ -2391,6 +2393,34 @@ export function dedupeChartTargets(targets: AssetChartTarget[]): AssetChartTarge
   return Array.from(
     new Map(targets.map(target => [`${target.tab}:${target.canonicalId}`, target])).values(),
   );
+}
+
+export function buildMatrixChartTargetLookup(
+  tabs: Record<string, { assets?: MatrixAsset[] } | undefined>,
+): Map<string, AssetChartTarget | null> {
+  const lookup = new Map<string, AssetChartTarget | null>();
+  const add = (key: string | null | undefined, target: AssetChartTarget) => {
+    const normalized = String(key ?? '').trim().toUpperCase();
+    if (!normalized) return;
+    const current = lookup.get(normalized);
+    if (current && current.canonicalId !== target.canonicalId) lookup.set(normalized, null);
+    else if (current === undefined) lookup.set(normalized, target);
+  };
+  Object.entries(tabs).forEach(([tab, value]) => {
+    (value?.assets ?? []).forEach(asset => {
+      const canonicalId = asset.canonical_coin_id ?? asset.coin;
+      if (!canonicalId || !asset.coin) return;
+      const target: AssetChartTarget = {
+        canonicalId,
+        asset: { ...asset, canonical_coin_id: canonicalId, matrix_tab: tab },
+        tab,
+      };
+      add(canonicalId, target);
+      add(asset.coin, target);
+      add(asset.display_name, target);
+    });
+  });
+  return lookup;
 }
 
 function buildTvEmbedUrl(symbol: string, height = 480): string {
@@ -3425,25 +3455,7 @@ export default function HyperliquidScreenerPage() {
   }, [rows]);
 
   const matrixTargetsByTicker = useMemo(() => {
-    const lookup = new Map<string, AssetChartTarget | null>();
-    const add = (key: string | null | undefined, target: AssetChartTarget) => {
-      const normalized = String(key ?? '').trim().toUpperCase();
-      if (!normalized) return;
-      const current = lookup.get(normalized);
-      if (current && current.canonicalId !== target.canonicalId) lookup.set(normalized, null);
-      else if (current === undefined) lookup.set(normalized, target);
-    };
-    Object.entries(matrixClassification?.tabs ?? {}).forEach(([tab, value]) => {
-      (value?.assets ?? []).forEach(asset => {
-        const canonicalId = asset.canonical_coin_id ?? asset.coin;
-        if (!canonicalId || !asset.coin) return;
-        const target: AssetChartTarget = { canonicalId, asset: { ...asset, matrix_tab: tab }, tab };
-        add(canonicalId, target);
-        add(asset.coin, target);
-        add(asset.display_name, target);
-      });
-    });
-    return lookup;
+    return buildMatrixChartTargetLookup(matrixClassification?.tabs ?? {});
   }, [matrixClassification]);
 
   const resolveTickerTarget = useCallback((ticker: string): AssetChartTarget => {
